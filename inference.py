@@ -113,6 +113,8 @@ if __name__ == '__main__':
 
     # Writing inference result
     today_date_str = datetime.now().strftime("%Y%m%d")
-    model_infer_dir = path.join(*[model_name_or_path, 'inferences', today_date_str + '_' + args.doc.split('.', 1)[0]])
-    write_inference_result(document_with_preds, model_infer_dir, 'results.txt', include_scores=not args.noscores)
+    model_infer_dir = path.join(model_name_or_path, 'inferences')
+    infer_result_filename = today_date_str + '_' + args.doc.split('.', 1)[0] + '.txt'
+    write_inference_result(document_with_preds, model_infer_dir, infer_result_filename,
+                           include_scores=not args.noscores)
     print(f"Inference result saved inside {model_infer_dir}.")

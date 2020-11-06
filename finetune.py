@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelBinarizer
 from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoConfig, Trainer, TrainingArguments, \
     EvalPrediction
 from ner.custom_ner_dataset import CustomNERDataset
+from utils.generic_utils import uniquify_filename
 from utils.ner_utils import read_dataset
 from utils.plot_utils import plot_results
 from config import MODELS_DIR, DATASETS_DIR
@@ -98,7 +99,7 @@ def save_evaluation_result(result: dict, model_name: str, eval_dataset_name: str
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    output_filepath = path.join(output_dir, output_filename)
+    output_filepath = uniquify_filename(path.join(output_dir, output_filename))
     with open(output_filepath, "w") as writer:
         writer.write('Model evaluated: ' + model_name + '\n')
         writer.write('Dataset used for evaluation: ' + eval_dataset_name + '\n')
@@ -191,15 +192,16 @@ if __name__ == '__main__':
     model_name_or_path = args.model
     is_a_presaved_model = len(model_name_or_path.split('_')) > 1
 
-    # model_output_dir = MODELS_DIR + (args.saveas if args.saveas else model_name_or_path)
     model_output_dir = path.join(MODELS_DIR, model_name_or_path + ('_' + today_date_str if not args.notrain else ''))
+    if not args.notrain:
+        model_output_dir = uniquify_filename(model_output_dir)
+
     model_cache_dir = path.join(model_output_dir, 'cache')
 
     # If we are only evaluating a model then we save the results (and the logs) inside a specific folder
-    # model_eval_dir = model_output_dir + '/evaluations/' + today_date_str + '_' + args.evalset.split('.')[0]
-    model_eval_dir = path.join(*[model_output_dir, 'evaluations', today_date_str + '_' + args.evalset.split('.')[0]])
+    model_eval_dir = uniquify_filename(path.join(*[model_output_dir, 'evaluations', today_date_str + '_'
+                                                   + args.evalset.split('.')[0]]))
 
-    # model_logs_dir = (model_eval_dir if args.notrain else model_output_dir) + '/logs/'
     model_logs_dir = path.join(model_eval_dir if args.notrain else model_output_dir, 'logs')
 
     print(f"Is a pre-saved model? {is_a_presaved_model}")

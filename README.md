@@ -20,6 +20,7 @@ HOW TO FINETUNE AND EVALUATE:
 Run
 
 python finetune.py *model_name* -trainset *trainingset_name* -evalset *evaluationset_name*
+(es: python finetune.py distilbert-base-cased -trainset train.txt -evalset eval.txt)
 
 to train the model *model_name* on dataset *trainingset_name* and then evaluate the model 
 on *evaluationset_name* dataset.
@@ -63,6 +64,7 @@ HOW TO MAKE INFERENCE:
 Run
 
 python inference.py *model_name* *document_name*
+(es: python inference.py distilbert-base-cased_yyyymmdd test.txt)
 
 to use the model *model_name* to infere named entities of *document_name* document and save a new,
 annotated copy of it.
