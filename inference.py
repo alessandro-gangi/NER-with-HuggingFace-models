@@ -5,8 +5,9 @@ from os import path
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer, TokenClassificationPipeline
 from config import MODELS_DIR, DATASETS_DIR, SPECIAL_TOKENS
+from utils.generic_utils import uniquify_filename
 
-
+# Command line parameters
 parser = argparse.ArgumentParser(description='NER with HuggingFace models')
 parser.add_argument('model', type=str,
                     help='Name of a specific model previously saved inside "models" folder'
@@ -18,6 +19,13 @@ parser.add_argument('-noscores', action='store_true', help='If set, prediction s
 
 
 def read_document(filepath):
+    """
+    Read a given document and return its content as a list of sequences
+    :param filepath: str
+        path to the document
+    :return: list
+        list of strings representing the content of the document
+    """
     doc_sequences = []
     with open(filepath, encoding='utf-8') as fp:
         line = fp.readline()
@@ -28,7 +36,7 @@ def read_document(filepath):
     return doc_sequences
 
 
-def write_result(result: list, output_dir: str, output_filename: str, include_scores=False):
+def write_inference_result(result: list, output_dir: str, output_filename: str, include_scores=False):
     """
     Write inference results on file (text with predictions).
     :param result: list
@@ -44,7 +52,7 @@ def write_result(result: list, output_dir: str, output_filename: str, include_sc
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    output_filepath = path.join(output_dir, output_filename)
+    output_filepath = uniquify_filename(path.join(output_dir, output_filename))
     with open(output_filepath, "w", encoding='utf-8') as writer:
         for seq_with_preds in result:
             for word_with_pred in seq_with_preds:
@@ -81,7 +89,7 @@ if __name__ == '__main__':
     document = read_document(path.join(DATASETS_DIR, args.doc))
     predictions = nlp(document)
 
-    # Align results
+    # Generate a new document (as list of sequences) with the labels predicted by the model
     document_with_preds = []
     for seq_pred in predictions:
         seq_with_preds = []
@@ -103,11 +111,8 @@ if __name__ == '__main__':
 
         document_with_preds.append(seq_with_preds)
 
-    # Writing results
+    # Writing inference result
     today_date_str = datetime.now().strftime("%Y%m%d")
     model_infer_dir = path.join(*[model_name_or_path, 'inferences', today_date_str + '_' + args.doc.split('.', 1)[0]])
-    write_result(document_with_preds, model_infer_dir, 'results.txt', include_scores=not args.noscores)
-    print(f"Inference results saved inside {model_infer_dir}.")
-
-
-
+    write_inference_result(document_with_preds, model_infer_dir, 'results.txt', include_scores=not args.noscores)
+    print(f"Inference result saved inside {model_infer_dir}.")

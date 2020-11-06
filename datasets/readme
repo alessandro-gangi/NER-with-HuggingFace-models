@@ -1,0 +1,4 @@
+Place in this folder your custom datasets.
+
+You can already find a training and an evaluation dataset for "finetune" script. There is also a test dataset
+for "inference" script

@@ -42,7 +42,7 @@ parser.add_argument('-maxseqlen', default=None, type=int,
                     help='Value used by tokenizer to apply padding or truncation to sequences')
 parser.add_argument('-epochs', default=2, type=int, help='Number of epochs during training')
 parser.add_argument('-warmsteps', default=500, type=int, help='Number of warm-up steps before training')
-parser.add_argument('-wdecay', default=0.01, type=float, help='Weight decay to use during training')
+parser.add_argument('-wdecay', default=0.00, type=float, help='Weight decay to use during training')
 parser.add_argument('-trainbatch', default=32, type=int, help='Per device batch size during training')
 parser.add_argument('-evalbatch', default=64, type=int, help='Per device batch size during evaluation')
 parser.add_argument('-logsteps', default=100, type=int, help='Number of training steps between 2 logs')
@@ -229,11 +229,13 @@ if __name__ == '__main__':
         cache_dir=model_cache_dir
     )
 
-    # If training the model we have to overwrite the configuration parameters related to labels
-    # checking the specified train set. Else (only evaluating the) we use configuration parameters.
-    if not args.notrain:
+    # If we are training the model we have to overwrite the configuration parameters related to labels
+    # checking the specified train set. If we are evaluating a new HuggingFace model, we do the same thing
+    # (we have to tell the model which labels to use).
+    # Else (we are evaluating a previously saved model) we use the configuration parameters.
+    if not args.notrain or not is_a_presaved_model:
         unique_labels = set()
-        unique_labels.update([l for seq in train_labels for l in seq])
+        unique_labels.update([l for seq in (train_labels if not args.notrain else eval_labels) for l in seq])
         num_labels = len(unique_labels)
         label2id = {lab: lab_id for lab_id, lab in enumerate(unique_labels)}
         id2label = {lab_id: lab for lab, lab_id in label2id.items()}
