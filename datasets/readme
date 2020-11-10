@@ -1,4 +1,4 @@
 Place in this folder your custom datasets.
 
-You can already find a training and an evaluation dataset for "finetune" script. There is also a test dataset
+You can already find a training and an evaluation dataset for "finetune" script. There are also two test datasets (italian and english)
 for "inference" script

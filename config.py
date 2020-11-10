@@ -4,7 +4,7 @@ from os import path
 
 # You should consider to set up and environment variable in order to make
 # this project working in other computers.
-# BASE_DIR = os.environ.get('BASE_PROJECT_DIR')
+# BASE_DIR = os.environ.get('CELI_PROJECT')
 #
 # For now, let's use a normal variable
 BASE_DIR = './'

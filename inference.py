@@ -28,10 +28,10 @@ def read_document(filepath):
     """
     doc_sequences = []
     with open(filepath, encoding='utf-8') as fp:
-        line = fp.readline()
+        line = fp.readline().strip()
         while line:
             doc_sequences.append(line)
-            line = fp.readline()
+            line = fp.readline().strip()
 
     return doc_sequences
 
@@ -91,7 +91,8 @@ if __name__ == '__main__':
 
     # Generate a new document (as list of sequences) with the labels predicted by the model
     document_with_preds = []
-    for seq_pred in predictions:
+
+    for seq_pred in predictions if len(document) > 1 else [predictions]:
         seq_with_preds = []
 
         for token_pred in seq_pred:
