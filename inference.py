@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
             else:
                 # Base case: add a tuple containing word, tag and score
-                seq_with_preds.append([word, entity, score] if not args.noscores else [word, entity])
+                seq_with_preds.append([word, entity, score])
 
         document_with_preds.append(seq_with_preds)
 

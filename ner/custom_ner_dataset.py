@@ -48,9 +48,10 @@ class CustomNERDataset(Dataset):
                  tk_padding=True,  # Tokenizer applies padding to have standard length sentences
                  tk_truncation=True,  # Tokenizer applies truncation to have standard length sentences
                  ):
+
         self.encoded_text = tokenizer(text,
                                       max_length=max_seq_length,
-                                      is_pretokenized=True,
+                                      is_split_into_words=True,
                                       return_offsets_mapping=True,
                                       padding=tk_padding,
                                       truncation=tk_truncation)

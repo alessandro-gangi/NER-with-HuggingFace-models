@@ -2,6 +2,15 @@ import re
 from operator import itemgetter
 from pathlib import Path
 
+"""
+
+THIS FILE IS NOT USED BY finetune OR inference SCRIPT 
+
+THESE UTILS WERE USED FOR CONVERTING DATASETS IN 
+OTHER FORMATS OR TO EXTRACT SENTENCES WITH MANY ENTITIES INSIDE
+
+"""
+
 
 def main_method():
     # copy this in real -main- file

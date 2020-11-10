@@ -13,7 +13,7 @@ model you finetuned works.
 How to use?
 -------------
 * Install required libraries.
-* Create an environment variable named "CELI_PROJECT" pointing at the root of this project (check config.py)
+* Create an environment variable named "BASE_PROJECT_DIR" pointing at the root of this project (check config.py)
 
 HOW TO FINETUNE AND EVALUATE:
 

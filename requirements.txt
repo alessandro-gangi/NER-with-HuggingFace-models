@@ -1,3 +1,5 @@
+matplotlib==3.2.0
+tensorboard
 torch
 transformers
 scikit-learn
