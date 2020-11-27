@@ -8,11 +8,11 @@ from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelBinarizer
 from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoConfig, Trainer, TrainingArguments, \
     EvalPrediction
-from ner.custom_ner_dataset import CustomNERDataset
-from utils.generic_utils import uniquify_filename
-from utils.ner_utils import read_dataset
-from utils.plot_utils import plot_results
-from config import MODELS_DIR, DATASETS_DIR
+from .ner.custom_ner_dataset import CustomNERDataset
+from .utils.generic_utils import uniquify_filename
+from .utils.ner_utils import read_dataset
+from .utils.plot_utils import plot_results
+from .config import MODELS_DIR, DATASETS_DIR
 
 # Command line parameters
 parser = argparse.ArgumentParser(description='NER with HuggingFace models')
