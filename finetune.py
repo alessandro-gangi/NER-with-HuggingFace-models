@@ -28,6 +28,10 @@ parser.add_argument('-evalset', default='', type=str,
                          ' dataset should contain one word and one label per line; there should be an empty '
                          'line between two sentences')
 
+parser.add_argument('-dataformat', default='conll', type=str,
+                    help='Format of training and evaluation datasets (conll and doccano are currently supported. '
+                         'Default is conll.')
+
 parser.add_argument('-tok', default='', type=str, help='Name of a specific tokenizer (check HuggingFace list). '
                                                        'If not provided, an automatic tokenizer will be used')
 parser.add_argument('-config', default='', type=str, help='Name of a specific model configuration (check HuggingFace'
@@ -215,12 +219,10 @@ if __name__ == '__main__':
     assert not args.trainset == args.notrain
     assert not args.evalset == args.noeval
     train_text, train_labels = read_dataset(path=path.join(DATASETS_DIR, args.trainset),
-                                            inline_sep=' ',
-                                            seq_sep='\n\n') if not args.notrain else ([], [])
+                                            data_format=args.dataformat) if not args.notrain else ([], [])
 
     eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.evalset),
-                                          inline_sep=' ',
-                                          seq_sep='\n\n') if not args.noeval else ([], [])
+                                          data_format=args.dataformat) if not args.noeval else ([], [])
 
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
@@ -237,7 +239,8 @@ if __name__ == '__main__':
     # Else (we are evaluating a previously saved model) we use the configuration parameters.
     if not args.notrain or not is_a_presaved_model:
         unique_labels = set()
-        unique_labels.update([l for seq in (train_labels if not args.notrain else eval_labels) for l in seq])
+        unique_labels.update([l for seq in (train_labels if not args.notrain else []) for l in seq])
+        unique_labels.update([l for seq in (eval_labels if not args.noeval else []) for l in seq])
         num_labels = len(unique_labels)
         label2id = {lab: lab_id for lab_id, lab in enumerate(unique_labels)}
         id2label = {lab_id: lab for lab, lab_id in label2id.items()}

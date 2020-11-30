@@ -5,11 +5,16 @@ import re
 from pathlib import Path
 #import pandas as pd
 #from pandas._libs import json
-from transformers import TrainingArguments
 
 
 def read_dataset(path, data_format='doccano'):
     """
+    Read a dataset as list of sequences/sentences and labels
+    :param path: str
+        Path of dataset
+    :param data_format: str
+        Format of the dataset: conll and doccano are currently supported
+    :return:
     """
     if data_format == 'doccano':
         return read_doccano_dataset(path)
@@ -18,6 +23,13 @@ def read_dataset(path, data_format='doccano'):
 
 
 def read_doccano_dataset(path):
+    """
+    Read the doccano dataset as list of sequences/sentences and labels
+    :param path: str
+        Path of dataset
+    :return: (list, list)
+        List of sequences and list of corresponding labels
+    """
     file_path = Path(path)
     raw_text = file_path.read_text(encoding='utf8').strip()
 
@@ -66,12 +78,11 @@ def read_doccano_dataset(path):
 
 def read_conll_dataset(path):
     """
-    ASSUMPTION: dataset is in the form <word, tag> with a single word and tag/label per line.
-    Read the dataset inside 'path' and extracts text and tags
-    :param path: path to dataset
-    :param inline_sep: separator between word and tag/label in a line
-    :param seq_sep: regular expression to separate two sequences (sentences) in the dataset
-    :return: a list of sequences and a list of tags/labels
+    Read the conll dataset as list of sequences/sentences and labels
+    :param path: str
+        Path of dataset
+    :return: (list, list)
+        List of sequences and list of corresponding labels
     """
     file_path = Path(path)
     raw_text = file_path.read_text(encoding='utf-8').strip()
