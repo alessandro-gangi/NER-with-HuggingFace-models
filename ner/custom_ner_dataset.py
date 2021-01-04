@@ -28,7 +28,9 @@ def encode_labels(labels, label2id, encoded_text):
         # set labels whose first offset position is 0 and the second is not 0
         # print(f"len of sent_labels: {len(sent_labels)}")
         try:
-            sent_enc_labels[(arr_offset[:, 0] == 0) & (arr_offset[:, 1] != 0)] = sent_labels_ids
+            mask = (arr_offset[:, 0] == 0) & (arr_offset[:, 1] != 0)
+            mask_true_num = np.count_nonzero(mask)
+            sent_enc_labels[mask] = sent_labels_ids[:mask_true_num]
             encoded_labels.append(sent_enc_labels.tolist())
         except ValueError as err:
             print(f"encode_labels ERROR: {err}.\nUsually this error is solved by "
