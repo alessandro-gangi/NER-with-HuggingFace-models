@@ -5,7 +5,7 @@ Finetune and evaluate HuggingFace models on custom datasets. Then make inference
 What Is This?
 -------------
 
-This is a Python 3.6 project for testing HuggingFace models performance on NER task. It's made of 2 different parts:
+This is a Python 3.7 project for testing HuggingFace models performance on NER task. It's made of 2 different parts:
 1. FINETUNING AND EVALUATION: chose a model, a training dataset and an evaluation dataset and see how good the 
 model you finetuned works.
 2. INFERENCE: Chose a model and a test document and see your model in action.
@@ -19,34 +19,29 @@ HOW TO FINETUNE AND EVALUATE:
 
 Run
 
-python finetune.py *model_name* -trainset *trainingset_name* -evalset *evaluationset_name*
-(es: python finetune.py distilbert-base-cased -trainset train.txt -evalset eval.txt)
+python finetune.py *model_name* *dataset_name*
+(es: python finetune.py distilbert-base-cased train.txt)
 
-to train the model *model_name* on dataset *trainingset_name* and then evaluate the model 
-on *evaluationset_name* dataset.
+to train and evaluate the model *model_name* on dataset *dataset_name* (dataset will be splitted)
 
 You can train a model from scratch using one the standard HuggingFace models (as 'bert-base-cased', 
 'dbmdz/bert-base-italian-cased') or you can train one of your previously saved models
 (as 'bert-base-cased_yyyymmdd').
 
-You can also just evaluate a model (an HugginFace standard one or one of yours) by running
+You can also just evaluate a model (an HugginFace standard one or any of yours) by running
 
-python finetune.py *model_name* -notrain -evalset *evaluationset_name*
+python finetune.py *model_name* *dataset_name* -notrain
 
 The following list shows all the command line parameters for *finetune* script:
 * 'model *name*' - Name of a specific model previously saved inside "models" folder or name 
 of an HuggingFace model'
-* '-trainset *name*' - Name of a specific training dataset present inside "datasets" folder. Training dataset 
-  should contain one word and one label per line; there should be an empty line between two sentences
-* '-evalset *name*' - Name of a specific evaluation dataset present inside "datasets" folder. Evaluation
-dataset should contain one word and one label per line; there should be an empty line between two sentences
+* 'dataset *name*' - Name of a specific dataset present inside "datasets" folder. Both doccano (json1) 
+and conll are supported
 * '-tok *name*' - Name of a specific tokenizer (check HuggingFace list). If not provided, an automatic tokenizer will be used
-* '-config *name*' - Name of a specific model configuration (check HuggingFace list). 
-If not provided, an automatic configuration will be used
+* '-config *name*' - Name of a specific model configuration (check HuggingFace list). If not provided, an automatic configuration will be used
 * '-notrain' - If set, training will be skipped
 * '-noeval' - If set, evaluation phase will be skipped
 * '-noplot' - If set, no charts will be plotted
-* '-traineval' - If set, model wont be evaluated during training
 
 Other specific arguments:
 * '-maxseqlen *value*' - int - Value used by tokenizer to apply padding or truncation to sequences. If not provided an automatic 

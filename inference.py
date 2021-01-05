@@ -4,8 +4,8 @@ from datetime import datetime
 from os import path
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer, TokenClassificationPipeline
-from .config import MODELS_DIR, DATASETS_DIR, SPECIAL_TOKENS
-from .utils.generic_utils import uniquify_filename
+from config import MODELS_DIR, DATASETS_DIR, SPECIAL_TOKENS
+from utils.generic_utils import uniquify_filename
 
 # Command line parameters
 parser = argparse.ArgumentParser(description='NER with HuggingFace models')
@@ -87,6 +87,7 @@ if __name__ == '__main__':
                                       ignore_labels=[])
 
     document = read_document(path.join(DATASETS_DIR, args.doc))
+    print(document)
     predictions = nlp(document)
 
     # Generate a new document (as list of sequences) with the labels predicted by the model

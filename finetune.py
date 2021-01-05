@@ -8,18 +8,18 @@ from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelBinarizer
 from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoConfig, Trainer, TrainingArguments, \
     EvalPrediction
-from .ner.custom_ner_dataset import CustomNERDataset
-from .utils.generic_utils import uniquify_filename
-from .utils.ner_utils import read_dataset
-from .utils.plot_utils import plot_results
-from .config import MODELS_DIR, DATASETS_DIR
+from ner.custom_ner_dataset import CustomNERDataset
+from utils.generic_utils import uniquify_filename
+from utils.ner_utils import read_dataset
+from utils.plot_utils import plot_results
+from config import MODELS_DIR, DATASETS_DIR
 
 # Command line parameters
 parser = argparse.ArgumentParser(description='NER with HuggingFace models')
 parser.add_argument('model', type=str,
                     help='Name of a specific model previously saved inside "models" folder'
                          ' or name of an HuggingFace model')
-parser.add_argument('-trainset', default='', type=str,
+parser.add_argument('dataset', type=str,
                     help='Name of a specific training dataset present inside "datasets" folder. Training dataset '
                          'should contain one word and one label per line; there should be an empty line between '
                          'two sentences')
@@ -28,9 +28,9 @@ parser.add_argument('-evalset', default='', type=str,
                          ' dataset should contain one word and one label per line; there should be an empty '
                          'line between two sentences')
 
-parser.add_argument('-dataformat', default='conll', type=str,
+parser.add_argument('-dataformat', default='doccano', type=str,
                     help='Format of training and evaluation datasets (conll and doccano are currently supported. '
-                         'Default is conll.')
+                         'Default is doccano.')
 
 parser.add_argument('-tok', default='', type=str, help='Name of a specific tokenizer (check HuggingFace list). '
                                                        'If not provided, an automatic tokenizer will be used')
@@ -41,7 +41,7 @@ parser.add_argument('-config', default='', type=str, help='Name of a specific mo
 parser.add_argument('-notrain', action='store_true', help='If set, training will be skipped')
 parser.add_argument('-noeval', action='store_true', help='If set, evaluation phase will be skipped')
 parser.add_argument('-noplot', action='store_true', help='If set, no charts will be plotted')
-parser.add_argument('-traineval', action='store_true', help='If set, model wont be evaluated during training')
+# parser.add_argument('-traineval', action='store_true', help='If set, model wont be evaluated during training')
 
 parser.add_argument('-maxseqlen', default=None, type=int,
                     help='Value used by tokenizer to apply padding or truncation to sequences')
@@ -197,10 +197,10 @@ if __name__ == '__main__':
     is_a_presaved_model = len(model_name_or_path.split('_')) > 1
 
     model_output_dir = path.join(MODELS_DIR, model_name_or_path + ('_' + today_date_str if not args.notrain else ''))
-    if not args.notrain:
-        model_output_dir = uniquify_filename(model_output_dir)
+    # if not args.notrain:
+    #     model_output_dir = uniquify_filename(model_output_dir)
 
-    model_cache_dir = path.join(model_output_dir, 'cache')
+    model_cache_dir = path.join('cache', args.model)
 
     # If we are only evaluating a model then we save the results (and the logs) inside a specific folder
     model_eval_dir = uniquify_filename(path.join(*[model_output_dir, 'evaluations', today_date_str + '_'
@@ -214,15 +214,13 @@ if __name__ == '__main__':
     print(f"Model Eval dir: {model_eval_dir}")
     print(f"Model Logs dir: {model_logs_dir}")
 
-    # Check if command line parameters were correctly provided, then
-    # read training and evaluation dataset
-    assert not args.trainset == args.notrain
-    assert not args.evalset == args.noeval
-    train_text, train_labels = read_dataset(path=path.join(DATASETS_DIR, args.trainset),
-                                            data_format=args.dataformat) if not args.notrain else ([], [])
+    train_text, train_labels, \
+    eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.dataset),
+                                          data_format=args.dataformat,
+                                          split=(0.75, 0.25))
 
-    eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.evalset),
-                                          data_format=args.dataformat) if not args.noeval else ([], [])
+    print(eval_text[:2], eval_labels[:2])
+    exit(0)
 
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
@@ -230,7 +228,7 @@ if __name__ == '__main__':
     print(f"Config name: {config_name_or_path}")
     model_config = AutoConfig.from_pretrained(
         pretrained_model_name_or_path=config_name_or_path,
-        cache_dir=model_cache_dir
+        cache_dir=path.join(model_cache_dir, 'config')
     )
 
     # If we are training the model we have to overwrite the configuration parameters related to labels
@@ -255,7 +253,7 @@ if __name__ == '__main__':
     print(f"Tokenizer name: {tokenizer_name_or_path}")
     tokenizer = AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path=tokenizer_name_or_path,
-        cache_dir=model_cache_dir,
+        cache_dir=path.join(model_cache_dir, 'tokenizer'),
         use_fast=True
     )
 
@@ -266,7 +264,7 @@ if __name__ == '__main__':
         pretrained_model_name_or_path=model_name_or_path,
         config=model_config,
         from_tf=bool('.ckpt' in model_output_dir),
-        cache_dir=model_cache_dir,
+        cache_dir=path.join(model_cache_dir, 'model')
     )
 
     # Create train and eval dataset with texts and labels previously read
@@ -294,8 +292,7 @@ if __name__ == '__main__':
                                            per_device_train_batch_size=args.trainbatch,
                                            per_device_eval_batch_size=args.evalbatch,
                                            logging_dir=model_logs_dir,
-                                           logging_steps=args.logsteps,
-                                           evaluate_during_training=args.traineval)
+                                           logging_steps=args.logsteps)
     trainer = Trainer(
         model=model,
         args=training_arguments,

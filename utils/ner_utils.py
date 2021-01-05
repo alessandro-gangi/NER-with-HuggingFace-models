@@ -1,4 +1,6 @@
 import json
+import random
+
 from spacy.lang.it import Italian
 from spacy.gold import biluo_tags_from_offsets
 import re
@@ -7,20 +9,39 @@ from pathlib import Path
 #from pandas._libs import json
 
 
-def read_dataset(path, data_format='doccano'):
+def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42):
     """
     Read a dataset as list of sequences/sentences and labels
     :param path: str
         Path of dataset
     :param data_format: str
         Format of the dataset: conll and doccano are currently supported
+    :param split: tuple of length 2
+        Representing the train-eval split percentages. Default (0.8, 0.2)
+    :param seed: int used for random shuffling
+        Set to None for random seed. Default 42 (for reproducibility)
     :return:
     """
+    text, labels = None, None
     if data_format == 'doccano':
-        return read_doccano_dataset(path)
+        text, labels = read_doccano_dataset(path)
     elif data_format == 'conll':
-        return read_conll_dataset(path)
+        text, labels = read_conll_dataset(path)
 
+    # shuffle text and labels
+    seed = seed if seed else random.random()
+    random.seed(seed)
+    random.shuffle(text)
+    random.seed(seed)
+    random.shuffle(labels)
+
+    # split data in training set and evaluation set
+    train_perc, eval_perc = split
+    train_size = int(round(train_perc*len(text)))
+    train_text, train_labels = text[:train_size], labels[:train_size]
+    eval_text, eval_labels = text[train_size:], labels[train_size:]
+
+    return train_text, train_labels, eval_text, eval_labels
 
 def read_doccano_dataset(path):
     """
