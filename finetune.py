@@ -10,7 +10,7 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoCon
     EvalPrediction
 from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
-from utils.ner_utils import read_dataset
+from utils.ner_utils import read_dataset, preprocess_entities
 from utils.plot_utils import plot_results
 from config import MODELS_DIR, DATASETS_DIR
 
@@ -37,7 +37,8 @@ parser.add_argument('-tok', default='', type=str, help='Name of a specific token
 parser.add_argument('-config', default='', type=str, help='Name of a specific model configuration (check HuggingFace'
                                                           ' list). If not provided, an automatic configuration will'
                                                           ' be used')
-
+parser.add_argument('-prepent', action='store_true', help='If set, entities will be preprocessed according to the '
+                                                          'config file')
 parser.add_argument('-notrain', action='store_true', help='If set, training will be skipped')
 parser.add_argument('-noeval', action='store_true', help='If set, evaluation phase will be skipped')
 parser.add_argument('-noplot', action='store_true', help='If set, no charts will be plotted')
@@ -198,7 +199,7 @@ if __name__ == '__main__':
 
     model_output_dir = path.join(MODELS_DIR, model_name_or_path + ('_' + today_date_str if not args.notrain else ''))
     if not args.notrain:
-         model_output_dir = uniquify_filename(model_output_dir)
+        model_output_dir = uniquify_filename(model_output_dir)
 
     model_cache_dir = path.join('cache', args.model)
 
@@ -217,7 +218,8 @@ if __name__ == '__main__':
     train_text, train_labels, \
     eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.dataset),
                                           data_format=args.dataformat,
-                                          split=(0.75, 0.25))
+                                          split=(0.75, 0.25),
+                                          prep_entities=args.prepent)
 
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \

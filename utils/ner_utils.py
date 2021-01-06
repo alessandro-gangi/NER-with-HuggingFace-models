@@ -6,11 +6,12 @@ from spacy.lang.it import Italian
 from spacy.gold import biluo_tags_from_offsets
 import re
 from pathlib import Path
+from config import ENTITIES_AGGREGATION, ENTITIES_TO_DELETE
 #import pandas as pd
 #from pandas._libs import json
 
 
-def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42):
+def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_entities=False):
     """
     Read a dataset as list of sequences/sentences and labels
     :param path: str
@@ -21,6 +22,8 @@ def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42):
         Representing the train-eval split percentages. Default (0.8, 0.2)
     :param seed: int used for random shuffling
         Set to None for random seed. Default 42 (for reproducibility)
+    :param prep_entities: boolean
+        If set, entities will be preprocessed (merged, removed) according to the config file
     :return:
     """
     text, labels = None, None
@@ -41,6 +44,10 @@ def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42):
     train_size = int(round(train_perc*len(text)))
     train_text, train_labels = text[:train_size], labels[:train_size]
     eval_text, eval_labels = text[train_size:], labels[train_size:]
+
+    if prep_entities:
+        train_labels = preprocess_entities(train_labels, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE)
+        eval_labels = preprocess_entities(eval_labels, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE)
 
     return train_text, train_labels, eval_text, eval_labels
 
@@ -148,6 +155,20 @@ def read_labels_list(path: str, sep='\n'):
     labels = re.split(r''+sep, raw_text)
 
     return labels
+
+def preprocess_entities(entities, ent_aggr, ent_del_l):
+    aggregations = dict()
+    for k, v in ent_aggr.items():
+        aggregations.update({'B-' + k: 'B-' + v,
+                             'I-' + k: 'I-' + v})
+
+    for ent in ent_del_l:
+        aggregations.update({'B-' + ent: 'O',
+                             'I-' + ent: 'O'})
+
+    new_entities = [[aggregations.get(e, e) for e in seq] for seq in entities]
+
+    return new_entities
 
 """
 def read_dataset_as_dataframe(path, inline_sep, seq_sep):
