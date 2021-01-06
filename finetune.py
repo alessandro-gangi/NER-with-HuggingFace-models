@@ -197,8 +197,8 @@ if __name__ == '__main__':
     is_a_presaved_model = len(model_name_or_path.split('_')) > 1
 
     model_output_dir = path.join(MODELS_DIR, model_name_or_path + ('_' + today_date_str if not args.notrain else ''))
-    # if not args.notrain:
-    #     model_output_dir = uniquify_filename(model_output_dir)
+    if not args.notrain:
+         model_output_dir = uniquify_filename(model_output_dir)
 
     model_cache_dir = path.join('cache', args.model)
 
@@ -218,9 +218,6 @@ if __name__ == '__main__':
     eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.dataset),
                                           data_format=args.dataformat,
                                           split=(0.75, 0.25))
-
-    print(eval_text[:2], eval_labels[:2])
-    exit(0)
 
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \

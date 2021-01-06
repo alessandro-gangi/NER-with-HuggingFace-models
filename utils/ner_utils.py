@@ -1,5 +1,6 @@
 import json
 import random
+import warnings
 
 from spacy.lang.it import Italian
 from spacy.gold import biluo_tags_from_offsets
@@ -71,10 +72,13 @@ def read_doccano_dataset(path):
     output_texts_reduced = []
     output_tags_reduced = []
 
+    warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
     for i, text in enumerate(texts):
         offsets = labels[i]
         doc = nlp(text)
         tokenized_text = [token.text for token in doc]
+
+
         tags = biluo_tags_from_offsets(doc, offsets)
 
         # Delete ' ' tokens (blank space tokens) and relative tags
