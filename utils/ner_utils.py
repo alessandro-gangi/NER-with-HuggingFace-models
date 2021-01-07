@@ -74,17 +74,14 @@ def read_doccano_dataset(path):
 
     # Spacy gold tokenizer to tokenize text and tags tokens with provided tags
     nlp = Italian()
-    output_texts_full = []
-    output_tags_full = []
-    output_texts_reduced = []
-    output_tags_reduced = []
+    output_texts = []
+    output_tags = []
 
     warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
     for i, text in enumerate(texts):
         offsets = labels[i]
         doc = nlp(text)
         tokenized_text = [token.text for token in doc]
-
 
         tags = biluo_tags_from_offsets(doc, offsets)
 
@@ -99,13 +96,13 @@ def read_doccano_dataset(path):
         iob_tags = [t.replace('U-', 'B-') for t in tags]
         iob_tags = [t.replace('L-', 'I-') for t in iob_tags]
 
-        if '-' not in iob_tags:
-            output_texts_reduced.append(tokenized_text)
-            output_tags_reduced.append(iob_tags)
-        output_texts_full.append(tokenized_text)
-        output_tags_full.append(iob_tags)
+        # Replace misaligned tag '-' with 'O' tag
+        iob_tags = [tag if tag != '-' else 'O' for tag in iob_tags]
 
-    return output_texts_reduced, output_tags_reduced
+        output_texts.append(tokenized_text)
+        output_tags.append(iob_tags)
+
+    return output_texts, output_tags
 
 
 def read_conll_dataset(path):

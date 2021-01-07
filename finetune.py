@@ -220,7 +220,7 @@ if __name__ == '__main__':
                                           data_format=args.dataformat,
                                           split=(0.75, 0.25),
                                           prep_entities=args.prepent)
-
+    exit(0)
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
         else path.join(MODELS_DIR, model_name_or_path) if is_a_presaved_model else model_name_or_path
