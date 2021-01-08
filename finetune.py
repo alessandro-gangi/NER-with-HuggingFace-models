@@ -10,12 +10,17 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoCon
     EvalPrediction
 from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
-from utils.ner_utils import read_dataset, preprocess_entities
+from utils.ner_utils import read_dataset
 from utils.plot_utils import plot_results
 from config import MODELS_DIR, DATASETS_DIR
 
+#
 # Command line parameters
+#
+
 parser = argparse.ArgumentParser(description='NER with HuggingFace models')
+
+# Mandatory
 parser.add_argument('model', type=str,
                     help='Name of a specific model previously saved inside "models" folder'
                          ' or name of an HuggingFace model')
@@ -23,6 +28,8 @@ parser.add_argument('dataset', type=str,
                     help='Name of a specific training dataset present inside "datasets" folder. Training dataset '
                          'should contain one word and one label per line; there should be an empty line between '
                          'two sentences')
+
+# Optional
 parser.add_argument('-evalset', default='', type=str,
                     help='Name of a specific evaluation dataset present inside "datasets" folder. Evaluation'
                          ' dataset should contain one word and one label per line; there should be an empty '
@@ -37,15 +44,14 @@ parser.add_argument('-tok', default='', type=str, help='Name of a specific token
 parser.add_argument('-config', default='', type=str, help='Name of a specific model configuration (check HuggingFace'
                                                           ' list). If not provided, an automatic configuration will'
                                                           ' be used')
-parser.add_argument('-prepent', action='store_true', help='If set, entities will be preprocessed according to the '
-                                                          'config file')
+parser.add_argument('-noentprep', action='store_true', help='If not set, entities will be preprocessed according to '
+                                                            'the config file')
 parser.add_argument('-notrain', action='store_true', help='If set, training will be skipped')
 parser.add_argument('-noeval', action='store_true', help='If set, evaluation phase will be skipped')
-parser.add_argument('-noplot', action='store_true', help='If set, no charts will be plotted')
-# parser.add_argument('-traineval', action='store_true', help='If set, model wont be evaluated during training')
-
+parser.add_argument('-plot', action='store_true', help='If set, charts will be plotted')
 parser.add_argument('-maxseqlen', default=None, type=int,
-                    help='Value used by tokenizer to apply padding or truncation to sequences')
+                    help='Value used by tokenizer to apply padding or truncation to sequences. Default is '
+                         'None=max_value=512')
 parser.add_argument('-epochs', default=2, type=int, help='Number of epochs during training')
 parser.add_argument('-warmsteps', default=500, type=int, help='Number of warm-up steps before training')
 parser.add_argument('-wdecay', default=0.00, type=float, help='Weight decay to use during training')
@@ -219,8 +225,8 @@ if __name__ == '__main__':
     eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.dataset),
                                           data_format=args.dataformat,
                                           split=(0.75, 0.25),
-                                          prep_entities=args.prepent)
-    exit(0)
+                                          prep_entities=not args.noentprep)
+
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
         else path.join(MODELS_DIR, model_name_or_path) if is_a_presaved_model else model_name_or_path
@@ -283,7 +289,7 @@ if __name__ == '__main__':
                                     tk_padding=True,
                                     tk_truncation=True) if not args.noeval else None
 
-    # Customize the training and the evaluation
+    # Customize training and evaluation
     training_arguments = TrainingArguments(output_dir=model_output_dir,
                                            num_train_epochs=args.epochs,
                                            warmup_steps=args.warmsteps,
@@ -337,7 +343,7 @@ if __name__ == '__main__':
                                    output_filename='results.txt')
 
         # Plot charts
-        if not args.noplot:
+        if args.plot:
             plot_results(eval_result, model_eval_dir)
 
         print(f"{model_name_or_path} evaluated.")

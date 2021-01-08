@@ -20,7 +20,7 @@ HOW TO FINETUNE AND EVALUATE:
 Run
 
 python finetune.py *model_name* *dataset_name*
-(es: python finetune.py distilbert-base-cased train.txt)
+(es: python finetune.py distilbert-base-cased train.json1)
 
 to train and evaluate the model *model_name* on dataset *dataset_name* (dataset will be splitted)
 
@@ -39,9 +39,10 @@ of an HuggingFace model'
 and conll are supported
 * '-tok *name*' - Name of a specific tokenizer (check HuggingFace list). If not provided, an automatic tokenizer will be used
 * '-config *name*' - Name of a specific model configuration (check HuggingFace list). If not provided, an automatic configuration will be used
+* '-noentprep' - If set, no entities aggregation/deletion will be performed
 * '-notrain' - If set, training will be skipped
 * '-noeval' - If set, evaluation phase will be skipped
-* '-noplot' - If set, no charts will be plotted
+* '-plot' - If set, charts will be plotted
 
 Other specific arguments:
 * '-maxseqlen *value*' - int - Value used by tokenizer to apply padding or truncation to sequences. If not provided an automatic 

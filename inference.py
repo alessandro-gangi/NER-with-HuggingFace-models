@@ -4,8 +4,8 @@ from datetime import datetime
 from os import path
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer, TokenClassificationPipeline
-from ner_huggingface.config import MODELS_DIR, DATASETS_DIR, SPECIAL_TOKENS
-from ner_huggingface.utils.generic_utils import uniquify_filename
+from config import MODELS_DIR, DATASETS_DIR, SPECIAL_TOKENS
+from utils.generic_utils import uniquify_filename
 
 # Command line parameters
 parser = argparse.ArgumentParser(description='NER with HuggingFace models')

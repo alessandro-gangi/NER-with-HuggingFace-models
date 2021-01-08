@@ -70,7 +70,15 @@ def read_doccano_dataset(path):
 
         texts_ids.append(json_obj['id'])
         texts.append(json_obj['text'])
-        labels.append([(lab[0], lab[1], lab[2]) for lab in json_obj['labels']])
+        #labels.append([(lab[0], lab[1], lab[2]) for lab in json_obj['labels']])
+
+        # Fix annotation ending span problems
+        labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[1]-1] else (lab[0], lab[1]-1, lab[2])
+                      for lab in json_obj['labels']])
+
+        # Fix annotation starting span problems
+        # labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[0]] else (lab[0]+1, lab[1], lab[2])
+        #               for lab in json_obj['labels']])
 
     # Spacy gold tokenizer to tokenize text and tags tokens with provided tags
     nlp = Italian()
@@ -78,6 +86,7 @@ def read_doccano_dataset(path):
     output_tags = []
 
     warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
+    cnt = 0  # test misalignment problems
     for i, text in enumerate(texts):
         offsets = labels[i]
         doc = nlp(text)
@@ -99,8 +108,14 @@ def read_doccano_dataset(path):
         # Replace misaligned tag '-' with 'O' tag
         iob_tags = [tag if tag != '-' else 'O' for tag in iob_tags]
 
+        # test misalignment problems
+        # for t in iob_tags:
+        #     if t == '-':
+        #        cnt+=1
+
         output_texts.append(tokenized_text)
         output_tags.append(iob_tags)
+    # print(f'COUNT: {cnt}')
 
     return output_texts, output_tags
 

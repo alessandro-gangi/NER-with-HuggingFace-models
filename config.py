@@ -24,9 +24,13 @@ SPECIAL_TOKENS = {'[CLS]', '[SEP]'}
 # {'ent1': 'ent2'}
 
 ENTITIES_AGGREGATION = {
-    'a': 'b',
-    'c': 'd'
+    'I.I. Ai Common Data: jobsector': 'I.I. Av Common Data: job title',
+    'Pers Det: Residence Place': 'I.I. Aii Com Data: city/town',
+    'D.I. Aiii Pers Det: Birthplace': 'I.I. Aii Com Data: city/town',
+    'Region': 'I.I. E Country',
+    'Regional Provenance': 'I.I. G Nationality',
+    'D.I. Aiv Pers Det: DOB': 'I.I. Avii Common Data: Date',
 }
 
-# We can also define a list of entities to delete before we train the model
-ENTITIES_TO_DELETE = ['k', 'l']
+# We can also define a list of entities to delete (not consider) before we train the model
+ENTITIES_TO_DELETE = ['DOUBT', 'Common data: Economic']
