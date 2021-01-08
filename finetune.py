@@ -245,15 +245,16 @@ def compute_metrics(p: EvalPrediction):
                                    labels=labels,
                                    target_names=target_names,
                                    output_dict=True)
-    # Covert scores into dictionary
-    """
-    scores_dict = dict()
+
+    # Covert scores into dictionary with scalar values
+    # *Trainer (tensorboard) needs this format
+    scalar_scores = dict()
     for key, value in scores.items():
         for sub_key, sub_value in value.items():
             new_key = key + '_' + sub_key
-            scores_dict.update({new_key: sub_value})
-    """
-    return scores
+            scalar_scores.update({new_key: sub_value})
+
+    return scalar_scores
 
 
 if __name__ == '__main__':
