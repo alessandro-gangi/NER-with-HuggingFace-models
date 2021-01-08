@@ -160,13 +160,17 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
     df_other_data.sort_values('key')
 
+    print('ciao')
+    print(df_data)
+    print(df_general_data)
+    print(df_other_data)
     # Build excel file and save it
     writer = pd.ExcelWriter(os.path.join(output_dir, output_filename),
                             engine='xlsxwriter')
     df_data.to_excel(writer, sheet_name='By label', index=False)
     df_general_data.to_excel(writer, sheet_name='General', index=False)
     df_other_data.to_excel(writer, sheet_name='Other', index=False)
-    writer.save()
+    #writer.save()
     """
     output_filepath = uniquify_filename(path.join(output_dir, output_filename))
     with open(output_filepath, "w") as writer:
