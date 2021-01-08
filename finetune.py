@@ -4,6 +4,8 @@ import time
 from datetime import datetime, timedelta
 from os import path
 import numpy as np
+import pandas as pd
+import xlsxwriter
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelBinarizer
 from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoConfig, Trainer, TrainingArguments, \
@@ -89,12 +91,12 @@ def save_training_infos(model_name: str, train_dataset_name: str, num_epochs: in
         writer.write('Training duration: ' + str(timedelta(seconds=duration)))
 
 
-def save_evaluation_result(result: dict, model_name: str, eval_dataset_name: str, duration: float,
+def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str, duration: float,
                            output_dir: str, output_filename: str):
     """
     Write metric results on file.
     :param result: dict
-        dictionary containing metric results
+        dictionary containing metric scores
     :param model_name: str
         Name of the model evaluated
     :param eval_dataset_name: str
@@ -110,6 +112,63 @@ def save_evaluation_result(result: dict, model_name: str, eval_dataset_name: str
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
+    unique_metrics = set()  # support, recall, ecc
+    unique_types = set()  # macro avg, micro avg, ecc
+    lab_met2score = dict()
+    type_met2score = dict()
+    data = []  # lab, sup, rec, prec, f1
+    general_data = []  # type, sup, rec, prec, f1
+    other_data = []  # key, value
+
+    # Fill lab_met2score and type_met2score support dictionaries
+    # or fil other data
+    for k, score in scores.items():
+        splits = k.split('_')
+        if len(splits) == 3:
+            _, lab_or_type, met = splits[0], splits[1], splits[2]
+            unique_metrics.add(met)
+            if lab_or_type not in unique_labels:  # so it's a type
+                unique_types.add(lab_or_type)
+                type_met2score[(lab_or_type, met)] = score
+            else:
+                lab_met2score[(lab_or_type, met)] = score
+        else:  # other (epoch, total_floss, eval_loss)
+            other_data.append([' '.join(splits), score])
+    other_data.append(['Model name', model_name])
+    other_data.append(['Eval dataset name', eval_dataset_name])
+    other_data.append(['Eval duration', duration])
+
+    # Prepare dataframes
+    df_data = pd.DataFrame.from_records(data, columns=['label'] + list(unique_metrics))
+    df_data.sort_values('label')
+
+    df_general_data = pd.DataFrame.from_records(general_data, columns=['type'] + list(unique_metrics))
+    df_general_data.sort_values('type')
+
+    df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
+    df_other_data.sort_values('key')
+
+    # Fill data and general_data
+    for lab in unique_labels:
+        d = [lab]
+        for met in unique_metrics:
+            if (lab, met) in lab_met2score.keys():
+                d.append(round(lab_met2score[(lab, met)], 3))
+        data.append(d)
+    for typ in unique_types:
+        d = [typ]
+        for met in unique_metrics:
+            d.append(round(type_met2score[(typ, met)], 3))
+        general_data.append(d)
+
+    # Build excel file and save it
+    writer = pd.ExcelWriter(os.path.join(output_dir, output_filename),
+                            engine='xlsxwriter')
+    df_data.to_excel(writer, sheet_name='By label', index=False)
+    df_general_data.to_excel(writer, sheet_name='General', index=False)
+    df_other_data.to_excel(writer, sheet_name='Other', index=False)
+    writer.save()
+    """
     output_filepath = uniquify_filename(path.join(output_dir, output_filename))
     with open(output_filepath, "w") as writer:
         writer.write('Model evaluated: ' + model_name + '\n')
@@ -117,6 +176,7 @@ def save_evaluation_result(result: dict, model_name: str, eval_dataset_name: str
         writer.write('Evaluation duration: ' + str(timedelta(seconds=duration)) + '\n\n')
         for key, value in result.items():
             writer.write("%s = %s\n" % (key, round(value, 3)))
+    """
 
 
 def align_predictions(predictions: np.ndarray, true_labels_ids: np.ndarray, binarize=True):
@@ -186,12 +246,13 @@ def compute_metrics(p: EvalPrediction):
                                    target_names=target_names,
                                    output_dict=True)
     # Covert scores into dictionary
+    """
     scores_dict = dict()
     for key, value in scores.items():
         for sub_key, sub_value in value.items():
             new_key = key + '_' + sub_key
             scores_dict.update({new_key: sub_value})
-
+    """
     return scores
 
 
@@ -340,7 +401,7 @@ if __name__ == '__main__':
                                    eval_dataset_name=path.join(DATASETS_DIR, args.evalset),
                                    duration=eval_elapsed_time,
                                    output_dir=model_eval_dir,
-                                   output_filename='results.txt')
+                                   output_filename='eval_results.xlsx')
 
         # Plot charts
         if args.plot:
