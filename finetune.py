@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from os import path
 import numpy as np
 import pandas as pd
-import xlsxwriter
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import LabelBinarizer
 from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoConfig, Trainer, TrainingArguments, \
@@ -95,7 +94,7 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
                            output_dir: str, output_filename: str):
     """
     Write metric results on file.
-    :param result: dict
+    :param scores: dict
         dictionary containing metric scores
     :param model_name: str
         Name of the model evaluated
@@ -138,16 +137,6 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     other_data.append(['Eval dataset name', eval_dataset_name])
     other_data.append(['Eval duration', duration])
 
-    # Prepare dataframes
-    df_data = pd.DataFrame.from_records(data, columns=['label'] + list(unique_metrics))
-    df_data.sort_values('label')
-
-    df_general_data = pd.DataFrame.from_records(general_data, columns=['type'] + list(unique_metrics))
-    df_general_data.sort_values('type')
-
-    df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
-    df_other_data.sort_values('key')
-
     # Fill data and general_data
     for lab in unique_labels:
         d = [lab]
@@ -160,6 +149,16 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
         for met in unique_metrics:
             d.append(round(type_met2score[(typ, met)], 3))
         general_data.append(d)
+
+    # Prepare dataframes
+    df_data = pd.DataFrame.from_records(data, columns=['label'] + list(unique_metrics))
+    df_data.sort_values('label')
+
+    df_general_data = pd.DataFrame.from_records(general_data, columns=['type'] + list(unique_metrics))
+    df_general_data.sort_values('type')
+
+    df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
+    df_other_data.sort_values('key')
 
     # Build excel file and save it
     writer = pd.ExcelWriter(os.path.join(output_dir, output_filename),

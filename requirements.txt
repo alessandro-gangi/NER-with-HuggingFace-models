@@ -5,4 +5,3 @@ torch
 transformers==3.4.0
 scikit-learn
 numpy==1.19.3
-xlsxwriter
