@@ -73,12 +73,16 @@ def read_doccano_dataset(path):
         #labels.append([(lab[0], lab[1], lab[2]) for lab in json_obj['labels']])
 
         # Fix annotation ending span problems
-        labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[1]-1] else (lab[0], lab[1]-1, lab[2])
+        try:
+            labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[1]-1] else (lab[0], lab[1]-1, lab[2])
                       for lab in json_obj['labels']])
+        except:
+            print(json_obj['text'], len(json_obj['text']))
+            print(json_obj['labels'], len(json_obj['labels']))
 
         # Fix annotation starting span problems
-        # labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[0]] else (lab[0]+1, lab[1], lab[2])
-        #               for lab in json_obj['labels']])
+        #labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[0]] else (lab[0]+1, lab[1], lab[2])
+        #              for lab in json_obj['labels']])
 
     # Spacy gold tokenizer to tokenize text and tags tokens with provided tags
     nlp = Italian()
