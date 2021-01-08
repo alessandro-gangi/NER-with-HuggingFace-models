@@ -2,13 +2,16 @@ import json
 import random
 import warnings
 
+from sklearn.model_selection import train_test_split
 from spacy.lang.it import Italian
 from spacy.gold import biluo_tags_from_offsets
 import re
 from pathlib import Path
 from config import ENTITIES_AGGREGATION, ENTITIES_TO_DELETE
-#import pandas as pd
-#from pandas._libs import json
+
+
+# import pandas as pd
+# from pandas._libs import json
 
 
 def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_entities=False):
@@ -26,12 +29,19 @@ def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_en
         If set, entities will be preprocessed (merged, removed) according to the config file
     :return:
     """
-    text, labels = None, None
+    texts, labels = None, None
     if data_format == 'doccano':
-        text, labels = read_doccano_dataset(path)
+        texts, labels = read_doccano_dataset(path)
     elif data_format == 'conll':
-        text, labels = read_conll_dataset(path)
+        texts, labels = read_conll_dataset(path)
 
+    # aggregate/remove some entities according to config.py file
+    if prep_entities:
+        labels = preprocess_entities(labels, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE)
+
+    train_texts, eval_texts, train_labels, eval_labels = split_data(texts, labels, split=split, seed=seed)
+
+    """    
     # shuffle text and labels
     seed = seed if seed else random.random()
     random.seed(seed)
@@ -44,12 +54,10 @@ def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_en
     train_size = int(round(train_perc*len(text)))
     train_text, train_labels = text[:train_size], labels[:train_size]
     eval_text, eval_labels = text[train_size:], labels[train_size:]
+    """
 
-    if prep_entities:
-        train_labels = preprocess_entities(train_labels, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE)
-        eval_labels = preprocess_entities(eval_labels, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE)
+    return train_texts, train_labels, eval_texts, eval_labels
 
-    return train_text, train_labels, eval_text, eval_labels
 
 def read_doccano_dataset(path):
     """
@@ -70,18 +78,19 @@ def read_doccano_dataset(path):
 
         texts_ids.append(json_obj['id'])
         texts.append(json_obj['text'])
-        #labels.append([(lab[0], lab[1], lab[2]) for lab in json_obj['labels']])
+        # labels.append([(lab[0], lab[1], lab[2]) for lab in json_obj['labels']])
 
         # Fix annotation ending span problems
         try:
-            labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[1]-1] else (lab[0], lab[1]-1, lab[2])
-                      for lab in json_obj['labels']])
+            labels.append(
+                [(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[1] - 1] else (lab[0], lab[1] - 1, lab[2])
+                 for lab in json_obj['labels']])
         except:
             print(json_obj['text'], len(json_obj['text']))
             print(json_obj['labels'], len(json_obj['labels']))
 
         # Fix annotation starting span problems
-        #labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[0]] else (lab[0]+1, lab[1], lab[2])
+        # labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[0]] else (lab[0]+1, lab[1], lab[2])
         #              for lab in json_obj['labels']])
 
     # Spacy gold tokenizer to tokenize text and tags tokens with provided tags
@@ -143,7 +152,7 @@ def read_conll_dataset(path):
         tmp_tags = []
         for raw_line in raw_seq.split('\n'):
             splits = raw_line.split(' ')
-            tmp_word = ''.join([i if ord(i) < 128 else '-' for i in splits[0]])  #replace non ASCII char
+            tmp_word = ''.join([i if ord(i) < 128 else '-' for i in splits[0]])  # replace non ASCII char
             tmp_sent.append(tmp_word)
             tmp_tag = splits[-1]
             tmp_tags.append(tmp_tag)
@@ -152,8 +161,6 @@ def read_conll_dataset(path):
         labels.append(tmp_tags)
 
     return text, labels
-
-
 
 
 def read_labels_list(path: str, sep='\n'):
@@ -168,23 +175,81 @@ def read_labels_list(path: str, sep='\n'):
     """
     file_path = Path(path)
     raw_text = file_path.read_text(encoding='utf8').strip()
-    labels = re.split(r''+sep, raw_text)
+    labels = re.split(r'' + sep, raw_text)
 
     return labels
 
+
 def preprocess_entities(entities, ent_aggr, ent_del_l):
+    """
+    Aggregate/remove some entities
+    :param entities: list of lists
+        entities to be preprocessed
+    :param ent_aggr: dict
+        dictionary of aggregations ('key' entity will be aggregated into 'value' entity)
+    :param ent_del_l: list
+        list of entities to be deleted
+    :return: list of lists
+        preprocessed entities
+    """
     aggregations = dict()
     for k, v in ent_aggr.items():
         aggregations.update({'B-' + k: 'B-' + v,
                              'I-' + k: 'I-' + v})
-
     for ent in ent_del_l:
         aggregations.update({'B-' + ent: 'O',
                              'I-' + ent: 'O'})
-
     new_entities = [[aggregations.get(e, e) for e in seq] for seq in entities]
 
     return new_entities
+
+
+def split_data(texts, labels, split=(0.8, 0.2), seed=42):
+    """
+    Split data into train and test. If stratified split is not possible, a standard split will be perfomed
+    :param texts: list of lists of str (words)
+    :param labels: list of list of str (labels)
+    :param split: tuple of len 2 (first is train percentage, second is test percentage)
+    :param seed: int for reproducibility
+    :return: train data, test_data, train_labels, test_labels
+    """
+    O_label = 'O'
+
+    def most_frequent(alist):
+        return max(set(alist), key=alist.count) if alist else 'O'
+
+    def least_frequent(alist):
+        return min(set(alist), key=alist.count) if alist else 'O'
+
+    y_most = [most_frequent(l) for l in [list(filter(lambda x: x != O_label, sublist)) for sublist
+                                         in labels if sublist != O_label]]
+    y_least = [least_frequent(l) for l in [list(filter(lambda x: x != O_label, sublist)) for sublist
+                                           in labels if sublist != O_label]]
+
+    try:
+        train_data, test_data, train_labels, test_labels = train_test_split(texts, labels,
+                                                                            test_size=split[1],
+                                                                            stratify=y_least,
+                                                                            random_state=seed,
+                                                                            shuffle=True)
+        print('LEAST FREQUENT stratified sampling')
+    except ValueError:
+        try:
+            train_data, test_data, train_labels, test_labels = train_test_split(texts, labels,
+                                                                                test_size=split[1],
+                                                                                stratify=y_most,
+                                                                                random_state=seed,
+                                                                                shuffle=True)
+            print('MOST FREQUENT stratified sampling')
+        except ValueError:
+            train_data, test_data, train_labels, test_labels = train_test_split(texts, labels,
+                                                                                test_size=split[1],
+                                                                                random_state=seed,
+                                                                                shuffle=True)
+            print('NO stratified sampling')
+
+    return train_data, test_data, train_labels, test_labels
+
 
 """
 def read_dataset_as_dataframe(path, inline_sep, seq_sep):
