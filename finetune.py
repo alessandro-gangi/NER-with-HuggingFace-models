@@ -90,8 +90,8 @@ def save_training_infos(model_name: str, train_dataset_name: str, num_epochs: in
         writer.write('Training duration: ' + str(timedelta(seconds=duration)))
 
 
-def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str, duration: float,
-                           output_dir: str, output_filename: str):
+def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str, labels: set,
+                           duration: float, output_dir: str, output_filename: str):
     """
     Write metric results on file.
     :param scores: dict
@@ -100,6 +100,8 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
         Name of the model evaluated
     :param eval_dataset_name: str
         name of the dataset used for evaluation
+    :param labels: set
+        set of labels used during training/evaluation
     :param duration: float
         training duration time
     :param output_dir: str
@@ -115,7 +117,7 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     unique_types = set()  # macro avg, micro avg, ecc
     lab_met2score = dict()
     type_met2score = dict()
-    data = []  # lab, sup, rec, prec, f1
+    bylabel_data = []  # lab, sup, rec, prec, f1
     general_data = []  # type, sup, rec, prec, f1
     other_data = []  # key, value
 
@@ -126,7 +128,7 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
         if len(splits) == 3:
             _, lab_or_type, met = splits[0], splits[1], splits[2]
             unique_metrics.add(met)
-            if lab_or_type not in unique_labels:  # so it's a type
+            if lab_or_type not in labels:  # so it's a type
                 unique_types.add(lab_or_type)
                 type_met2score[(lab_or_type, met)] = score
             else:
@@ -138,12 +140,12 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     other_data.append(['Eval duration', duration])
 
     # Fill data and general_data
-    for lab in unique_labels:
+    for lab in labels:
         d = [lab]
         for met in unique_metrics:
             if (lab, met) in lab_met2score.keys():
                 d.append(round(lab_met2score[(lab, met)], 3))
-        data.append(d)
+        bylabel_data.append(d)
     for typ in unique_types:
         d = [typ]
         for met in unique_metrics:
@@ -151,8 +153,8 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
         general_data.append(d)
 
     # Prepare dataframes
-    df_data = pd.DataFrame.from_records(data, columns=['label'] + list(unique_metrics))
-    df_data.sort_values('label')
+    df_bylabel_data = pd.DataFrame.from_records(bylabel_data, columns=['label'] + list(unique_metrics))
+    df_bylabel_data.sort_values('label')
 
     df_general_data = pd.DataFrame.from_records(general_data, columns=['type'] + list(unique_metrics))
     df_general_data.sort_values('type')
@@ -160,17 +162,12 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
     df_other_data.sort_values('key')
 
-    print('ciao')
-    print(df_data)
-    print(df_general_data)
-    print(df_other_data)
     # Build excel file and save it
-    writer = pd.ExcelWriter(os.path.join(output_dir, output_filename),
-                            engine='xlsxwriter')
-    df_data.to_excel(writer, sheet_name='By label', index=False)
+    writer = pd.ExcelWriter(os.path.join(output_dir, output_filename), engine='openpyxl')
+    df_bylabel_data.to_excel(writer, sheet_name='By label', index=False)
     df_general_data.to_excel(writer, sheet_name='General', index=False)
     df_other_data.to_excel(writer, sheet_name='Other', index=False)
-    #writer.save()
+    writer.save()
     """
     output_filepath = uniquify_filename(path.join(output_dir, output_filename))
     with open(output_filepath, "w") as writer:
@@ -290,7 +287,7 @@ if __name__ == '__main__':
                                           data_format=args.dataformat,
                                           split=(0.75, 0.25),
                                           prep_entities=not args.noentprep)
-    exit(0)
+
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
         else path.join(MODELS_DIR, model_name_or_path) if is_a_presaved_model else model_name_or_path
@@ -394,20 +391,21 @@ if __name__ == '__main__':
     if not args.noeval:
         print(f"Evaluating {model_name_or_path} now...")
         eval_start_time = time.time()
-        eval_result = trainer.evaluate()
+        eval_scores = trainer.evaluate()
         eval_elapsed_time = (time.time() - eval_start_time)
 
         # Write file
         if trainer.is_world_process_zero():
-            save_evaluation_result(eval_result,
+            save_evaluation_result(eval_scores,
                                    model_name=model_name_or_path,
                                    eval_dataset_name=path.join(DATASETS_DIR, args.evalset),
+                                   labels=unique_labels,
                                    duration=eval_elapsed_time,
                                    output_dir=model_eval_dir,
                                    output_filename='eval_results.xlsx')
 
         # Plot charts
         if args.plot:
-            plot_results(eval_result, model_eval_dir)
+            plot_results(eval_scores, model_eval_dir)
 
         print(f"{model_name_or_path} evaluated.")
