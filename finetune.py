@@ -287,7 +287,9 @@ if __name__ == '__main__':
                                    labels=unique_labels,
                                    duration=eval_elapsed_time,
                                    output_dir=model_eval_dir,
-                                   output_filename='eval_results.xlsx')
+                                   output_filename='eval_results.xlsx',
+                                   aggregations=ENTITIES_AGGREGATION,
+                                   deleted_entities=ENTITIES_TO_DELETE)
 
         # Plot charts
         if args.plot:

@@ -3,6 +3,7 @@ from datetime import timedelta
 from os import path
 import pandas as pd
 
+
 def save_training_infos(model_name: str, train_dataset_name: str, num_epochs: int,
                         duration: float, output_dir: str, output_filename: str):
     """
@@ -33,7 +34,8 @@ def save_training_infos(model_name: str, train_dataset_name: str, num_epochs: in
 
 
 def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str, labels: set,
-                           duration: float, output_dir: str, output_filename: str):
+                           duration: float, output_dir: str, output_filename: str,
+                           aggregations: dict, deleted_entities: list):
     """
     Write metric results on file.
     :param scores: dict
@@ -50,6 +52,10 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
         path to folder where result will be saved
     :param output_filename: str
         name of the results file that will be saved
+    :param aggregations: dict
+        entities aggregated ('key' entity aggregated into 'value' entity)
+    :param deleted_entities: list
+        entities that were not considered in model training (and evaluation)
     :return: void
     """
     if not os.path.exists(output_dir):
@@ -77,9 +83,9 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
                 lab_met2score[(lab_or_type, met)] = score
         else:  # other (epoch, total_floss, eval_loss)
             other_data.append([' '.join(splits), score])
-    other_data.append(['Model name', model_name])
-    other_data.append(['Eval dataset name', eval_dataset_name])
-    other_data.append(['Eval duration', duration])
+    other_data.append(['model name', model_name])
+    other_data.append(['eval dataset name', eval_dataset_name])
+    other_data.append(['eval duration', duration])
 
     # Fill data and general_data
     for lab in labels:
@@ -104,9 +110,21 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
     df_other_data.sort_values('key')
 
+    df_ent_prep = pd.DataFrame(columns=['from', 'to'])
+    if aggregations:
+        df_ent_prep = df_ent_prep.append(pd.DataFrame.from_records([[e_src, e_targ] for e_src, e_targ
+                                                                    in aggregations.items()],
+                                                                   columns=['from', 'to']))
+    if deleted_entities:
+        df_ent_prep = df_ent_prep.append(pd.DataFrame.from_records([[ent, 'DELETED'] for ent in deleted_entities],
+                                                                   columns=['from', 'to']))
+
     # Build excel file and save it
     writer = pd.ExcelWriter(os.path.join(output_dir, output_filename), engine='openpyxl')
     df_bylabel_data.to_excel(writer, sheet_name='By label', index=False)
     df_general_data.to_excel(writer, sheet_name='General', index=False)
     df_other_data.to_excel(writer, sheet_name='Other', index=False)
+    if not df_ent_prep.empty:
+        df_ent_prep.sort_values('from')
+        df_ent_prep.to_excel(writer, sheet_name='Entities pre-processing', index=False)
     writer.save()
