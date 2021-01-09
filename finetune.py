@@ -11,7 +11,7 @@ from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
 from utils.ner_utils import read_dataset
 from utils.plot_utils import plot_results
-from config import MODELS_DIR, DATASETS_DIR
+from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE
 from utils.results_utils import save_training_infos, save_evaluation_result
 
 
@@ -169,8 +169,9 @@ if __name__ == '__main__':
     eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.dataset),
                                           data_format=args.dataformat,
                                           split=(0.75, 0.25),
-                                          prep_entities=not args.noentprep)
-
+                                          prep_entities=None if args.noentprep else (ENTITIES_AGGREGATION,
+                                                                                     ENTITIES_TO_DELETE))
+    exit(0)
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
         else path.join(MODELS_DIR, model_name_or_path) if is_a_presaved_model else model_name_or_path

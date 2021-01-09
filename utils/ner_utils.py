@@ -1,5 +1,4 @@
 import json
-import random
 import warnings
 
 from sklearn.model_selection import train_test_split
@@ -7,14 +6,8 @@ from spacy.lang.it import Italian
 from spacy.gold import biluo_tags_from_offsets
 import re
 from pathlib import Path
-from config import ENTITIES_AGGREGATION, ENTITIES_TO_DELETE
 
-
-# import pandas as pd
-# from pandas._libs import json
-
-
-def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_entities=False):
+def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_entities=None):
     """
     Read a dataset as list of sequences/sentences and labels
     :param path: str
@@ -25,8 +18,9 @@ def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_en
         Representing the train-eval split percentages. Default (0.8, 0.2)
     :param seed: int used for random shuffling
         Set to None for random seed. Default 42 (for reproducibility)
-    :param prep_entities: boolean
-        If set, entities will be preprocessed (merged, removed) according to the config file
+    :param prep_entities: tuple of len 2
+        If present, tuple[0] is the dictionary for entities aggregations and
+        tuple[1] is the list of entities to be removed
     :return:
     """
     texts, labels = None, None
@@ -37,7 +31,8 @@ def read_dataset(path, data_format='doccano', split=(0.8, 0.2), seed=42, prep_en
 
     # aggregate/remove some entities according to config.py file
     if prep_entities:
-        labels = preprocess_entities(labels, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE)
+        ent2ent_aggr, ent_to_del = prep_entities
+        labels = preprocess_entities(labels, ent2ent_aggr, ent_to_del)
 
     train_texts, eval_texts, train_labels, eval_labels = split_data(texts, labels, split=split, seed=seed)
 
@@ -76,18 +71,23 @@ def read_doccano_dataset(path):
     for json_str in json_strings:
         json_obj = json.loads(json_str)
 
-        texts_ids.append(json_obj['id'])
-        texts.append(json_obj['text'])
         # labels.append([(lab[0], lab[1], lab[2]) for lab in json_obj['labels']])
 
         # Fix annotation ending span problems
+        # TODO: Now, only ending space misalignment problem is fixed. FIX ALSO starting space problem
         try:
             labels.append(
                 [(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[1] - 1] else (lab[0], lab[1] - 1, lab[2])
                  for lab in json_obj['labels']])
+            texts_ids.append(json_obj['id'])
+            texts.append(json_obj['text'])
         except:
-            print(json_obj['text'], len(json_obj['text']))
-            print(json_obj['labels'], len(json_obj['labels']))
+            print(f"-----------------------\n"
+                  f"There is a problem with the following document in the corpus: please check its "
+                  f"annotations indexes.(this document will be skipped for now)\n"
+                  f"ID: {json_obj['id']}\nText: {json_obj['text']}\nLabels: {json_obj['labels']}\n"
+                  f"-----------------------")
+            continue
 
         # Fix annotation starting span problems
         # labels.append([(lab[0], lab[1], lab[2]) if ' ' != json_obj['text'][lab[0]] else (lab[0]+1, lab[1], lab[2])
@@ -182,7 +182,7 @@ def read_labels_list(path: str, sep='\n'):
 
 def preprocess_entities(entities, ent_aggr, ent_del_l):
     """
-    Aggregate/remove some entities
+    Aggregate/remove some entities (This method only work with IOB labels)
     :param entities: list of lists
         entities to be preprocessed
     :param ent_aggr: dict
@@ -216,39 +216,33 @@ def split_data(texts, labels, split=(0.8, 0.2), seed=42):
     O_label = 'O'
 
     def most_frequent(alist):
-        return max(set(alist), key=alist.count) if alist else 'O'
+        return max(set(alist), key=alist.count) if alist else O_label
 
     def least_frequent(alist):
-        return min(set(alist), key=alist.count) if alist else 'O'
+        return min(set(alist), key=alist.count) if alist else O_label
 
-    y_most = [most_frequent(l) for l in [list(filter(lambda x: x != O_label, sublist)) for sublist
-                                         in labels if sublist != O_label]]
-    y_least = [least_frequent(l) for l in [list(filter(lambda x: x != O_label, sublist)) for sublist
-                                           in labels if sublist != O_label]]
+    functions = [least_frequent, most_frequent, None]
+    return split_data_impl(texts, labels, functions, split, seed, O_label)
 
-    try:
-        train_data, test_data, train_labels, test_labels = train_test_split(texts, labels,
-                                                                            test_size=split[1],
-                                                                            stratify=y_least,
-                                                                            random_state=seed,
-                                                                            shuffle=True)
-        print('LEAST FREQUENT stratified sampling')
-    except ValueError:
+
+def split_data_impl(texts, labels, functions, split, seed, O_label):
+    train_texts, test_texts, train_labels, test_labels = None, None, None, None
+    for i, f in enumerate(functions):
+        y_strat = [f(l) for l in [list(filter(lambda x: x != O_label, sublist))
+                                  for sublist in labels if sublist != O_label]] if f else None
+
         try:
-            train_data, test_data, train_labels, test_labels = train_test_split(texts, labels,
-                                                                                test_size=split[1],
-                                                                                stratify=y_most,
-                                                                                random_state=seed,
-                                                                                shuffle=True)
-            print('MOST FREQUENT stratified sampling')
+            train_texts, test_texts, train_labels, test_labels = train_test_split(texts, labels,
+                                                                                  test_size=split[1],
+                                                                                  stratify=y_strat,
+                                                                                  random_state=seed,
+                                                                                  shuffle=True)
+            print(f'DATA SPLIT type: {i}\t(0:least_frequent-strat, 1:most_frequent-strat, 2:no-stratified)')
+            break
         except ValueError:
-            train_data, test_data, train_labels, test_labels = train_test_split(texts, labels,
-                                                                                test_size=split[1],
-                                                                                random_state=seed,
-                                                                                shuffle=True)
-            print('NO stratified sampling')
+            continue
 
-    return train_data, test_data, train_labels, test_labels
+    return train_texts, test_texts, train_labels, test_labels
 
 
 """
