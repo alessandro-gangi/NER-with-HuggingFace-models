@@ -35,10 +35,10 @@ python finetune.py *model_name* *dataset_name* -notrain
 The following list shows all the command line parameters for *finetune* script:
 * 'model *name*' - Name of a specific model previously saved inside "models" folder or name 
 of an HuggingFace model'
-* 'dataset *name*' - Name of a specific dataset present inside "datasets" folder. Both doccano (json1) 
-and conll are supported
+* 'dataset *name*' - Name of a specific dataset present inside "datasets" folder.
 * '-tok *name*' - Name of a specific tokenizer (check HuggingFace list). If not provided, an automatic tokenizer will be used
 * '-config *name*' - Name of a specific model configuration (check HuggingFace list). If not provided, an automatic configuration will be used
+* '-splitseed *value*' - Seed for reproducibility in sampling dataset. If not provided, random seed will be used.
 * '-noentprep' - If set, no entities aggregation/deletion will be performed
 * '-notrain' - If set, training will be skipped
 * '-noeval' - If set, evaluation phase will be skipped

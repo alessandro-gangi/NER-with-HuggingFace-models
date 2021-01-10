@@ -7,7 +7,7 @@ from spacy.lang.it import Italian
 from spacy.gold import biluo_tags_from_offsets
 
 
-def read_data(path, prep_entities=None, split=(0.8, 0.2), seed=42):
+def read_data(path, prep_entities=None, split=(0.8, 0.2), seed=None):
     # Read data and build dataframe
     raw_data = Path(path).read_text(encoding='utf8').strip()
     jsons_data = raw_data.split('\n')
@@ -17,7 +17,8 @@ def read_data(path, prep_entities=None, split=(0.8, 0.2), seed=42):
     df = pd.DataFrame(dict_data)
 
     # Preprocess data
-    df = preprocess_data(df, prep_entities=prep_entities)
+    if prep_entities:
+        df = preprocess_data(df, prep_entities=prep_entities)
 
     # Split data in training and test set
     train_df, test_df = split_data(df, split, seed=seed)
@@ -29,7 +30,7 @@ def read_data(path, prep_entities=None, split=(0.8, 0.2), seed=42):
     return train_texts, test_texts, train_labels, test_labels, train_indexes, test_indexes
 
 
-def split_data(data_df, split, seed=42):
+def split_data(data_df, split, seed=None):
     def least_frequent(alist):
         return min(set(alist), key=alist.count) if alist else 'O'
 
@@ -45,6 +46,7 @@ def split_data(data_df, split, seed=42):
     for i, f in enumerate(strat_functions):
         y_strat = [f([lab[2:] for lab in l]) for l in [list(filter(lambda x: x != 'O', sublist))
                                   for sublist in labels if sublist != 'O']] if f else None
+
         try:
             train_df, test_df = train_test_split(data_df, test_size=split[1],
                                                  stratify=y_strat, random_state=seed,
@@ -110,7 +112,7 @@ def fix_tokenization(tok_text, labels):
     labels = [l.replace('U-', 'B-') for l in labels]
     labels = [l.replace('L-', 'I-') for l in labels]
 
-    # Replace remained misaligned tag '-' with 'O' tag
+    # Replace remained misaligned tags '-' with 'O' tags
     labels = [l if l != '-' else 'O' for l in labels]
 
     return tok_text, labels

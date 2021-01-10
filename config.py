@@ -30,7 +30,18 @@ ENTITIES_AGGREGATIONS = {
     'Region': 'I.I. E Country',
     'Regional Provenance': 'I.I. G Nationality',
     'D.I. Aiv Pers Det: DOB': 'I.I. Avii Common Data: Date',
+    'Pers Det: Address': 'I.I. Aiii Common Data: street'
 }
 
 # We can also define a list of entities to delete (not consider) before we train the model
-ENTITIES_TO_FILTER = ['DOUBT', 'Common data: Economic']
+ENTITIES_TO_FILTER = ['DOUBT', 'Common data: Economic',
+                      'I.I. C Judicial Data', 'I.I. H Poli Sentiment/opinion',
+                      'Ethnic Origin', 'I.I. L Company Sentiment',
+                      'D.I. Biii Cont Det: phone', 'Common data: Work Perform',
+                      'Language', 'Information about death', 'Branded Product',
+                      'I.I. J Religious belief/profes', 'Common Data: Education',
+                      'I.I. I National holiday', 'Common Data: Monetary',
+                      'Public Figures', 'I.I. Ax Common Data: color',
+                      'I.I. K Duration Contr', 'Social Security Number',
+                      'Ident Doc: ID Number', 'Ident Doc: Health cardNo.']
+

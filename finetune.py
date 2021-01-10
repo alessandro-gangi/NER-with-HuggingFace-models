@@ -40,6 +40,8 @@ parser.add_argument('-tok', default='', type=str, help='Name of a specific token
 parser.add_argument('-config', default='', type=str, help='Name of a specific model configuration (check HuggingFace'
                                                           ' list). If not provided, an automatic configuration will'
                                                           ' be used')
+parser.add_argument('-splitseed', default=None, type=int, help='Seed for reproducibility when sampling dataset. '
+                                                               'Default is None (random seed).')
 parser.add_argument('-noentprep', action='store_true', help='If not set, entities will be preprocessed according to '
                                                             'the config file')
 parser.add_argument('-notrain', action='store_true', help='If set, training will be skipped')
@@ -166,7 +168,7 @@ if __name__ == '__main__':
                                             prep_entities=(ENTITIES_AGGREGATIONS,
                                                            ENTITIES_TO_FILTER),
                                             split=(0.8, 0.2),
-                                            seed=42)
+                                            seed=args.splitseed)
 
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
