@@ -23,8 +23,8 @@ def read_data(path, prep_entities=None, split=(0.8, 0.2), seed=42):
     train_df, test_df = split_data(df, split, seed=seed)
 
     # Extract text, labels and indexes (to replicate the same split in future)
-    train_texts, train_labels, train_indexes = train_df['text'], train_df['labels'], train_df.index.to_series()
-    test_texts, test_labels, test_indexes = test_df['text'], test_df['labels'], test_df.index.to_series()
+    train_texts, train_labels, train_indexes = train_df['text'].to_list(), train_df['labels'].to_list(), train_df.index.to_series()
+    test_texts, test_labels, test_indexes = test_df['text'].to_list(), test_df['labels'].to_list(), test_df.index.to_series()
 
     return train_texts, test_texts, train_labels, test_labels, train_indexes, test_indexes
 
@@ -94,8 +94,8 @@ def preprocess_data(data_df, prep_entities):
 
 
 def filter_and_aggregate(labels, aggregations: dict, to_filter: list):
-    labels = [l if l not in to_filter else 'O' for l in labels]
-    labels = [aggregations.get(l, l) for l in labels]
+    labels = [l if (l != 'o' and l[2:] not in to_filter) else 'O' for l in labels]
+    labels = [l[:2] + aggregations[l[2:]] if l[2:] in aggregations.keys() else l for l in labels]
 
     return labels
 

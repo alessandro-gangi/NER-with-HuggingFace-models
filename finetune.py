@@ -11,7 +11,7 @@ from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
 from utils.ner_utils import read_data
 from utils.plot_utils import plot_results
-from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATIONS, ENTITIES_TO_DELETE
+from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATIONS, ENTITIES_TO_FILTER
 from utils.results_utils import save_training_infos, save_evaluation_result
 
 #
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     train_labels, eval_labels, \
     train_indexes, eval_indexes = read_data(path=path.join(DATASETS_DIR, args.dataset),
                                             prep_entities=(ENTITIES_AGGREGATIONS,
-                                                           ENTITIES_TO_DELETE),
+                                                           ENTITIES_TO_FILTER),
                                             split=(0.8, 0.2),
                                             seed=42)
 
@@ -286,7 +286,7 @@ if __name__ == '__main__':
                                    output_dir=model_eval_dir,
                                    output_filename='eval_results.xlsx',
                                    aggregations=ENTITIES_AGGREGATIONS,
-                                   deleted_entities=ENTITIES_TO_DELETE)
+                                   deleted_entities=ENTITIES_TO_FILTER)
 
         # Plot charts
         if args.plot:

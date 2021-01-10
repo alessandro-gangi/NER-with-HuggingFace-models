@@ -33,4 +33,4 @@ ENTITIES_AGGREGATIONS = {
 }
 
 # We can also define a list of entities to delete (not consider) before we train the model
-ENTITIES_TO_DELETE = ['DOUBT', 'Common data: Economic']
+ENTITIES_TO_FILTER = ['DOUBT', 'Common data: Economic']
