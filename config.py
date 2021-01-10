@@ -23,7 +23,7 @@ SPECIAL_TOKENS = {'[CLS]', '[SEP]'}
 # Ex: if we want to merge the entities 'ent1' into 'ent2' we write
 # {'ent1': 'ent2'}
 
-ENTITIES_AGGREGATION = {
+ENTITIES_AGGREGATIONS = {
     'I.I. Ai Common Data: jobsector': 'I.I. Av Common Data: job title',
     'Pers Det: Residence Place': 'I.I. Aii Com Data: city/town',
     'D.I. Aiii Pers Det: Birthplace': 'I.I. Aii Com Data: city/town',

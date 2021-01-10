@@ -34,7 +34,7 @@ def save_training_infos(model_name: str, train_dataset_name: str, num_epochs: in
 
 
 def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str, labels: set,
-                           duration: float, output_dir: str, output_filename: str,
+                           split_indexes: tuple, duration: float, output_dir: str, output_filename: str,
                            aggregations: dict, deleted_entities: list):
     """
     Write metric results on file.
@@ -46,6 +46,9 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
         name of the dataset used for evaluation
     :param labels: set
         set of labels used during training/evaluation
+    :param split_indexes: tuple of len(2)
+        tuple containing lists of document indexes used for
+        training (tuple[0]) and for evaluation (tuple[1])
     :param duration: float
         training duration time
     :param output_dir: str
@@ -110,6 +113,9 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
     df_other_data.sort_values('key')
 
+    df_indexes_data = pd.DataFrame({'train': split_indexes[0],
+                                    'test': split_indexes[1]})
+
     df_ent_prep = pd.DataFrame(columns=['from', 'to'])
     if aggregations:
         df_ent_prep = df_ent_prep.append(pd.DataFrame.from_records([[e_src, e_targ] for e_src, e_targ
@@ -124,6 +130,7 @@ def save_evaluation_result(scores: dict, model_name: str, eval_dataset_name: str
     df_bylabel_data.to_excel(writer, sheet_name='By label', index=False)
     df_general_data.to_excel(writer, sheet_name='General', index=False)
     df_other_data.to_excel(writer, sheet_name='Other', index=False)
+    df_indexes_data.to_excel(writer, sheet_name='Split indexes', index=False)
     if not df_ent_prep.empty:
         df_ent_prep.sort_values('from')
         df_ent_prep.to_excel(writer, sheet_name='Entities pre-processing', index=False)

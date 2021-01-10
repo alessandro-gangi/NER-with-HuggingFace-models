@@ -9,11 +9,10 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoCon
     EvalPrediction
 from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
-from utils.ner_utils import read_dataset
+from utils.ner_utils import read_data
 from utils.plot_utils import plot_results
-from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATION, ENTITIES_TO_DELETE
+from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATIONS, ENTITIES_TO_DELETE
 from utils.results_utils import save_training_infos, save_evaluation_result
-
 
 #
 # Command line parameters
@@ -35,10 +34,6 @@ parser.add_argument('-evalset', default='', type=str,
                     help='Name of a specific evaluation dataset present inside "datasets" folder. Evaluation'
                          ' dataset should contain one word and one label per line; there should be an empty '
                          'line between two sentences')
-
-parser.add_argument('-dataformat', default='doccano', type=str,
-                    help='Format of training and evaluation datasets (conll and doccano are currently supported. '
-                         'Default is doccano.')
 
 parser.add_argument('-tok', default='', type=str, help='Name of a specific tokenizer (check HuggingFace list). '
                                                        'If not provided, an automatic tokenizer will be used')
@@ -165,13 +160,14 @@ if __name__ == '__main__':
     print(f"Model Eval dir: {model_eval_dir}")
     print(f"Model Logs dir: {model_logs_dir}")
 
-    train_text, train_labels, \
-    eval_text, eval_labels = read_dataset(path=path.join(DATASETS_DIR, args.dataset),
-                                          data_format=args.dataformat,
-                                          split=(0.75, 0.25),
-                                          prep_entities=None if args.noentprep else (ENTITIES_AGGREGATION,
-                                                                                     ENTITIES_TO_DELETE))
-    exit(0)
+    train_texts, eval_texts, \
+    train_labels, eval_labels, \
+    train_indexes, eval_indexes = read_data(path=path.join(DATASETS_DIR, args.dataset),
+                                            prep_entities=(ENTITIES_AGGREGATIONS,
+                                                           ENTITIES_TO_DELETE),
+                                            split=(0.8, 0.2),
+                                            seed=42)
+
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
         else path.join(MODELS_DIR, model_name_or_path) if is_a_presaved_model else model_name_or_path
@@ -219,7 +215,7 @@ if __name__ == '__main__':
     )
 
     # Create train and eval dataset with texts and labels previously read
-    train_dataset = CustomNERDataset(text=train_text,
+    train_dataset = CustomNERDataset(text=train_texts,
                                      labels=train_labels,
                                      label2id=model_config.label2id,
                                      tokenizer=tokenizer,
@@ -227,7 +223,7 @@ if __name__ == '__main__':
                                      tk_padding=True,
                                      tk_truncation=True)
 
-    eval_dataset = CustomNERDataset(text=eval_text,
+    eval_dataset = CustomNERDataset(text=eval_texts,
                                     labels=eval_labels,
                                     label2id=model_config.label2id,
                                     tokenizer=tokenizer,
@@ -285,10 +281,11 @@ if __name__ == '__main__':
                                    model_name=model_name_or_path,
                                    eval_dataset_name=path.join(DATASETS_DIR, args.evalset),
                                    labels=unique_labels,
+                                   split_indexes=(train_indexes, eval_indexes),
                                    duration=eval_elapsed_time,
                                    output_dir=model_eval_dir,
                                    output_filename='eval_results.xlsx',
-                                   aggregations=ENTITIES_AGGREGATION,
+                                   aggregations=ENTITIES_AGGREGATIONS,
                                    deleted_entities=ENTITIES_TO_DELETE)
 
         # Plot charts
