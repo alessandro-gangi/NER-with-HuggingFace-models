@@ -43,9 +43,8 @@ def split_data(data_df, split, seed=42):
 
     train_df, test_df = None, None
     for i, f in enumerate(strat_functions):
-        y_strat = [f(l) for l in [list(filter(lambda x: x != 'O', sublist))
+        y_strat = [f([lab[2:] for lab in l]) for l in [list(filter(lambda x: x != 'O', sublist))
                                   for sublist in labels if sublist != 'O']] if f else None
-
         try:
             train_df, test_df = train_test_split(data_df, test_size=split[1],
                                                  stratify=y_strat, random_state=seed,
