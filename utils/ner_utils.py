@@ -11,7 +11,7 @@ def read_data(path, prep_entities=None, split=(0.8, 0.2), seed=None):
     # Read data and build dataframe
     raw_data = Path(path).read_text(encoding='utf8').strip()
     jsons_data = raw_data.split('\n')
-    keys_needed = ['text', 'labels']
+    keys_needed = ['id', 'text', 'labels']
     dict_data = [{k: v for k, v in json.loads(el).items() if k in keys_needed}
                  for el in jsons_data]
     df = pd.DataFrame(dict_data)
@@ -62,11 +62,12 @@ def split_data(data_df, split, seed=None):
 def preprocess_data(data_df, prep_entities):
     nlp = Italian()
     for index, row in data_df.iterrows():
+        id = row['id']
         text = row['text']
         labels = row['labels']
 
         # fixing starting/ending space misalignments
-        labels = fix_labels_misalignments(text=text, labels=labels)
+        labels = fix_labels_misalignments(id=id, text=text, labels=labels)
         if labels is None:  # unable to fix -> skip this text
             data_df.drop(index, inplace=True)
             data_df.reset_index(drop=True)
@@ -118,7 +119,7 @@ def fix_tokenization(tok_text, labels):
     return tok_text, labels
 
 
-def fix_labels_misalignments(text, labels):
+def fix_labels_misalignments(id, text, labels):
     try:
         # fixing ending space misalignment
         labels = [(lab[0], lab[1], lab[2]) if ' ' != text[lab[1] - 1]
@@ -128,10 +129,9 @@ def fix_labels_misalignments(text, labels):
                   else (lab[0] + 1, lab[1], lab[2]) for lab in labels]
 
     except IndexError:
-        print(f"-----------------------\n"
-              f"There is a problem with the following document in the corpus: please check its "
+        print(f"\nThere is a problem with the following document in the corpus: please check its "
               f"annotations indexes.(this document will be skipped for now)\n"
-              f"Text: {text}\nLabels: {labels}\n"
+              f"ID: {id}\nText: {text}\nLabels: {labels}\n"
               f"-----------------------")
         return None
 
