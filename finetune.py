@@ -25,16 +25,9 @@ parser.add_argument('model', type=str,
                     help='Name of a specific model previously saved inside "models" folder'
                          ' or name of an HuggingFace model')
 parser.add_argument('dataset', type=str,
-                    help='Name of a specific training dataset present inside "datasets" folder. Training dataset '
-                         'should contain one word and one label per line; there should be an empty line between '
-                         'two sentences')
+                    help='Name of a specific Doccano dataset present inside "datasets" folder.')
 
 # Optional
-parser.add_argument('-evalset', default='', type=str,
-                    help='Name of a specific evaluation dataset present inside "datasets" folder. Evaluation'
-                         ' dataset should contain one word and one label per line; there should be an empty '
-                         'line between two sentences')
-
 parser.add_argument('-tok', default='', type=str, help='Name of a specific tokenizer (check HuggingFace list). '
                                                        'If not provided, an automatic tokenizer will be used')
 parser.add_argument('-config', default='', type=str, help='Name of a specific model configuration (check HuggingFace'
