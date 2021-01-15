@@ -9,7 +9,7 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoCon
     EvalPrediction
 from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
-from utils.ner_utils import read_data
+from utils.ner_utils import read_data, process_predictions, get_metric_scores, get_confusion_matrix
 from utils.plot_utils import plot_results
 from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATIONS, ENTITIES_TO_FILTER
 from utils.results_utils import save_training_infos, save_evaluation_result
@@ -50,9 +50,9 @@ parser.add_argument('-trainbatch', default=32, type=int, help='Per device batch 
 parser.add_argument('-evalbatch', default=64, type=int, help='Per device batch size during evaluation')
 parser.add_argument('-logsteps', default=100, type=int, help='Number of training steps between 2 logs')
 
-
+"""
 def align_predictions(predictions: np.ndarray, true_labels_ids: np.ndarray, binarize=True):
-    """
+    
     Support method to re-align the labels and convert them to a binary (class) representation
     :param predictions: np.ndarray
         predictions of the model. Use argmax on second axis to get the predicted ids
@@ -61,7 +61,7 @@ def align_predictions(predictions: np.ndarray, true_labels_ids: np.ndarray, bina
     :param binarize: bool
         whether to convert labels to binary format or not
     :return: re-aligned and binarized true labels and prediction labels
-    """
+    
 
     preds_labels_ids = np.argmax(predictions, axis=2)
     batch_size, seq_len = preds_labels_ids.shape
@@ -91,16 +91,16 @@ def align_predictions(predictions: np.ndarray, true_labels_ids: np.ndarray, bina
         true_labels = bin_true_labels
 
     return preds_labels, true_labels
-
-
+"""
+"""
 def compute_metrics(p: EvalPrediction):
-    """
+    
     Compute scores of model according to some metrics
     :param p: EvalPrediction
         object containing predictions and true labels ids
     :return: dict
         containing scores
-    """
+    
     preds_labels, true_labels = align_predictions(p.predictions, p.label_ids)
     flat_preds_labels = [item for sublist in preds_labels for item in sublist]
     flat_true_labels = [item for sublist in true_labels for item in sublist]
@@ -127,7 +127,7 @@ def compute_metrics(p: EvalPrediction):
             scalar_scores.update({new_key: sub_value})
 
     return scalar_scores
-
+"""
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -238,9 +238,7 @@ if __name__ == '__main__':
     trainer = Trainer(
         model=model,
         args=training_arguments,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        compute_metrics=compute_metrics
+        train_dataset=train_dataset
     )
 
     # Fine-tune model and save it together with its tokenizer
@@ -265,17 +263,27 @@ if __name__ == '__main__':
 
     # Evaluate model, write a results file (saved together with the model) and plot graphs
     if not args.noeval:
-        print(f"Evaluating {model_name_or_path} now...")
         eval_start_time = time.time()
-        eval_scores = trainer.evaluate()
+        predict_results = trainer.predict(eval_dataset)
         eval_elapsed_time = (time.time() - eval_start_time)
+
+        preds_label_ids_flat, true_label_ids_flat = process_predictions(predict_results)
+        label_ids = list(model_config.id2label.keys())
+        labels = list(model_config.id2label.values())
+
+        # Compute scores (precision, recall, f1-score, support) dataframe
+        df_scores = get_metric_scores(preds_label_ids_flat, true_label_ids_flat, label_ids, labels)
+
+        # Compute confusion matrix dataframe
+        df_confmatrix = get_confusion_matrix(true_label_ids_flat, preds_label_ids_flat, labels, label_ids,
+                                             normalize='true')
 
         # Write file
         if trainer.is_world_process_zero():
-            save_evaluation_result(eval_scores,
+            save_evaluation_result(df_scores=df_scores,
+                                   df_conf_matrix=df_confmatrix,
                                    model_name=model_name_or_path,
                                    eval_dataset_name=path.join(DATASETS_DIR, args.evalset),
-                                   labels=unique_labels,
                                    split_indexes=(train_indexes, eval_indexes),
                                    duration=eval_elapsed_time,
                                    output_dir=model_eval_dir,
@@ -283,8 +291,8 @@ if __name__ == '__main__':
                                    aggregations=ENTITIES_AGGREGATIONS,
                                    deleted_entities=ENTITIES_TO_FILTER)
 
-        # Plot charts
-        if args.plot:
-            plot_results(eval_scores, model_eval_dir)
+        # Plot charts #TODO: fix plots (now 'scores' is a dataframe)
+        #if args.plot:
+        #    plot_results(eval_scores, model_eval_dir)
 
-        print(f"{model_name_or_path} evaluated.")
+        print(f"{model_name_or_path} evaluated: eval_results saved in {model_eval_dir}.")

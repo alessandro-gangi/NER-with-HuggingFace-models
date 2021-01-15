@@ -104,7 +104,10 @@ def covert_to_doccano(processed_predictions):
 
             doc_text += text
             if entity != 'O':  # Do not include 'O'
-                doc_labels.append([start_idx2, end_idx2, entity[2:]])
+                if entity.startswith('I-'):  # single label that includes the whole tag (ex: '25 anni')
+                    doc_labels[-1][1] += len(text)
+                else:
+                    doc_labels.append([start_idx2, end_idx2, entity[2:]])
 
         json_obj.update({
             'text': doc_text,
