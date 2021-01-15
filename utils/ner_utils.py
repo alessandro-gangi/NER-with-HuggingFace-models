@@ -3,6 +3,7 @@ import warnings
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from spacy.lang.it import Italian
@@ -277,5 +278,7 @@ def get_confusion_matrix(true_label_ids_flat, preds_label_ids_flat, labels, labe
         cm_df[l] = cm_df[l].round(3)
     # add left column with labels
     cm_df.insert(loc=0, column='', value=labels)
+    cmap = sns.light_palette("grey", as_cmap=True)
+    cm_df.style.background_gradient(cmap=cmap)
 
     return cm_df

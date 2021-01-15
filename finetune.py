@@ -238,7 +238,8 @@ if __name__ == '__main__':
     trainer = Trainer(
         model=model,
         args=training_arguments,
-        train_dataset=train_dataset
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset
     )
 
     # Fine-tune model and save it together with its tokenizer
