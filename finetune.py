@@ -268,7 +268,16 @@ if __name__ == '__main__':
         predict_results = trainer.predict(eval_dataset)
         eval_elapsed_time = (time.time() - eval_start_time)
 
-        preds_label_ids_flat, true_label_ids_flat = process_predictions(predict_results)
+        # Get true label_ids and preds label_ids: they are list of lists of ids. For example,
+        # true_label_ids[2][1] is the true label associated to the 2nd token of the 3rd document
+        preds_label_ids, true_label_ids = process_predictions(predict_results)
+
+        # Now we need to flatten our two lists of lists into lists in order to compute metrics. For example,
+        # [[a, b, c], [d, e]] becomes [a, b, c, d, e]
+        preds_label_ids_flat = [lab_id for doc_lab_ids in preds_label_ids for lab_id in doc_lab_ids]
+        true_label_ids_flat = [lab_id for doc_lab_ids in true_label_ids for lab_id in doc_lab_ids]
+
+        # Get label_ids and labels as lists
         label_ids = list(model_config.id2label.keys())
         labels = list(model_config.id2label.values())
 

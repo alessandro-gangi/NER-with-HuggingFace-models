@@ -220,11 +220,14 @@ def process_predictions(predict_results):
     # print(f'Shape true: ({len(true_label_ids)}, varying) Shape pred: ({len(preds_label_ids)}, varying)')
 
     # Now we need to flatten our two lists of lists into lists in order to compute metrics
-    preds_label_ids_flat = [lab_id for doc_lab_ids in preds_label_ids for lab_id in doc_lab_ids]
-    true_label_ids_flat = [lab_id for doc_lab_ids in true_label_ids for lab_id in doc_lab_ids]
+    #
+    # TEST: Now the method does not flatten the lists anymore (they're flattened in finetune.py)
+    #
+    # preds_label_ids_flat = [lab_id for doc_lab_ids in preds_label_ids for lab_id in doc_lab_ids]
+    # true_label_ids_flat = [lab_id for doc_lab_ids in true_label_ids for lab_id in doc_lab_ids]
     # print(f'Shape true_flat: ({len(true_label_ids_flat)}, ) Shape pred_flat: ({len(preds_label_ids_flat)}, )')
 
-    return preds_label_ids_flat, true_label_ids_flat
+    return preds_label_ids, true_label_ids
 
 
 def get_metric_scores(preds_label_ids_flat, true_label_ids_flat, label_ids, labels):
