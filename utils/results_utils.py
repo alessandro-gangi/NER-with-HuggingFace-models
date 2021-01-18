@@ -33,7 +33,8 @@ def save_training_infos(model_name: str, train_dataset_name: str, num_epochs: in
         writer.write('Training duration: ' + str(timedelta(seconds=duration)))
 
 
-def save_evaluation_result(df_scores: pd.DataFrame, df_conf_matrix: pd.DataFrame, model_name: str, eval_dataset_name: str,
+def save_evaluation_result(df_scores: pd.DataFrame, df_conf_matrix: pd.DataFrame, df_errors: pd.DataFrame,
+                           model_name: str, eval_dataset_name: str,
                            split_indexes: tuple, duration: float, output_dir: str, output_filename: str,
                            aggregations: dict, deleted_entities: list):
     """
@@ -42,6 +43,8 @@ def save_evaluation_result(df_scores: pd.DataFrame, df_conf_matrix: pd.DataFrame
         dataframe with rows=labels and columns=scores
     :param df_conf_matrix: pd.DataFrame
         dataframe representing the confusion matrix
+    :param df_errors: pd.Dataframe
+        dataframe representing the errors made by model
     :param model_name: str
         Name of the model evaluated
     :param eval_dataset_name: str
@@ -84,6 +87,7 @@ def save_evaluation_result(df_scores: pd.DataFrame, df_conf_matrix: pd.DataFrame
     writer = pd.ExcelWriter(os.path.join(output_dir, output_filename), engine='openpyxl')
     df_scores.to_excel(writer, sheet_name='Scores', index=False)
     df_conf_matrix.to_excel(writer, sheet_name='Confusion matrix', index=False)
+    df_errors.to_excel(writer, sheet_name='Errors', index=False)
     if not df_ent_prep.empty:
         df_ent_prep.sort_values('from')
         df_ent_prep.to_excel(writer, sheet_name='Entities pre-processing', index=False)

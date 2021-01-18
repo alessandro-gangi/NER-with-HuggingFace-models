@@ -1,3 +1,5 @@
+seaborn
+pandas
 spacy==2.3.5
 matplotlib==3.2.0
 tensorboard

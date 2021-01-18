@@ -9,7 +9,8 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer, AutoCon
     EvalPrediction
 from ner.custom_ner_dataset import CustomNERDataset
 from utils.generic_utils import uniquify_filename
-from utils.ner_utils import read_data, process_predictions, get_metric_scores, get_confusion_matrix
+from utils.ner_utils import read_data, process_predictions, get_metric_scores, get_confusion_matrix, \
+    get_predictions_errors
 from utils.plot_utils import plot_results
 from config import MODELS_DIR, DATASETS_DIR, ENTITIES_AGGREGATIONS, ENTITIES_TO_FILTER
 from utils.results_utils import save_training_infos, save_evaluation_result
@@ -288,10 +289,14 @@ if __name__ == '__main__':
         df_confmatrix = get_confusion_matrix(true_label_ids_flat, preds_label_ids_flat, labels, label_ids,
                                              normalize='true')
 
+        # Compute errors dataframe
+        df_errors = get_predictions_errors(true_label_ids, preds_label_ids, model_config.id2label)
+
         # Write file
         if trainer.is_world_process_zero():
             save_evaluation_result(df_scores=df_scores,
                                    df_conf_matrix=df_confmatrix,
+                                   df_errors=df_errors,
                                    model_name=model_name_or_path,
                                    eval_dataset_name=path.join(DATASETS_DIR, args.evalset),
                                    split_indexes=(train_indexes, eval_indexes),

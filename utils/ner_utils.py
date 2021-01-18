@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from collections import defaultdict
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from spacy.lang.it import Italian
@@ -263,6 +264,42 @@ def get_metric_scores(preds_label_ids_flat, true_label_ids_flat, label_ids, labe
     return df_scores
 
 
+def get_predictions_errors(true_label_ids, preds_label_ids, id2label):
+    """
+    Build a dataframe containing of errors with this structure: the first column (True) contains
+    the true label, the second (Pred) contains the predicted label. The fourth (Errors) contains a list of tuple (of len 2) with
+    the following structure:
+    - t[0] is the index of the document containing the error
+    - t[1] is the index of the token (inside the document t[0]) that was misclassified (it was predicted as 'Pred' but
+    it was 'True'.
+    The third column(Num) is the length of the list in column 4 and so it contains the number of total tokens that were
+    classified as 'Pred' but were 'True'
+    :param true_label_ids: list of lists of int
+        True labels associated to each token of each document
+    :param preds_label_ids: list of lists of int
+        Predicted labels associated to each token of each document
+    :param id2label: dict
+        Dictionary with ley=label_id and value=label
+    :return: pd.Dataframe
+        Dataframe with 4 columns (True, Pred, Num, Errors)
+    """
+    errors = defaultdict(list)
+
+    for i, true_doc_label_ids in enumerate(true_label_ids):
+        for j, true_label_id in enumerate(true_doc_label_ids):
+            if true_label_id != preds_label_ids[i][j]:
+                true_label = id2label[true_label_id]
+                preds_label = id2label[preds_label_ids[i][j]]
+                errors[(true_label, preds_label)].append((i, j))
+
+    errors_l = [(k[0], k[1], len(v), v) for k, v in errors.items()]
+
+    df_errors = pd.DataFrame(errors_l, columns=['True', 'Pred', 'Num', 'Errors'])
+    df_errors = df_errors.sort_values(by=['Num'], ascending=False)
+
+    return df_errors
+
+
 def get_confusion_matrix(true_label_ids_flat, preds_label_ids_flat, labels, label_ids, normalize='true'):
     """
     Build confusion matrix based on predictions of the model
@@ -282,6 +319,6 @@ def get_confusion_matrix(true_label_ids_flat, preds_label_ids_flat, labels, labe
     # add left column with labels
     cm_df.insert(loc=0, column='', value=labels)
     cmap = sns.light_palette("grey", as_cmap=True)
-    cm_df.style.background_gradient(cmap=cmap)
+    cm_df = cm_df.style.background_gradient(cmap=cmap)
 
     return cm_df
