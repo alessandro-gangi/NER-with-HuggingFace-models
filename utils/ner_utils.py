@@ -301,7 +301,7 @@ def get_metric_scores(preds_label_ids_flat, true_label_ids_flat, label_ids, labe
     return df_scores
 
 
-def get_predictions_errors(true_label_ids, preds_label_ids, id2label):
+def get_predictions_errors(true_label_ids, preds_label_ids, eval_texts, eval_indexes, id2label, idx2corpus_idx):
     """
     Build a dataframe containing of errors with this structure: the first column (True) contains
     the true label, the second (Pred) contains the predicted label. The fourth (Errors) contains a list of tuple (of len 2) with
@@ -315,11 +315,18 @@ def get_predictions_errors(true_label_ids, preds_label_ids, id2label):
         True labels associated to each token of each document
     :param preds_label_ids: list of lists of int
         Predicted labels associated to each token of each document
+    :param eval_texts: list of lists of str
+        Evaluation texts data obtained by reading and splitting the whole dataset
+    :param eval_indexes: pd.Series
+        Series representing the indexes (based on the whole dataset) od the documents present in the eval dataset
     :param id2label: dict
         Dictionary with ley=label_id and value=label
+    :param idx2corpus_idx: dict
+        Dictionary with key=index and value=(origin_corpus_name, index_of_doc_inside_that_corpus)
     :return: pd.Dataframe
         Dataframe with 4 columns (True, Pred, Num, Errors)
     """
+    eval_indexes_l = eval_indexes.to_list()
     errors = defaultdict(list)
 
     for i, true_doc_label_ids in enumerate(true_label_ids):
@@ -327,12 +334,14 @@ def get_predictions_errors(true_label_ids, preds_label_ids, id2label):
             if true_label_id != preds_label_ids[i][j]:
                 true_label = id2label[true_label_id]
                 preds_label = id2label[preds_label_ids[i][j]]
-                errors[(true_label, preds_label)].append((i, j))
+                corpus_name, doc_idx = idx2corpus_idx[eval_indexes_l[i]]
+                token = eval_texts[i][j]
+                errors[(true_label, preds_label)].append((corpus_name, doc_idx, "'" + token + "'"))
 
     errors_l = [(k[0], k[1], len(v), v) for k, v in errors.items()]
 
     df_errors = pd.DataFrame(errors_l, columns=['True', 'Pred', 'Num', 'Errors'])
-    df_errors = df_errors.sort_values(by=['Num'], ascending=False)
+    # df_errors = df_errors.sort_values(by=['Num'], ascending=False)
 
     return df_errors
 

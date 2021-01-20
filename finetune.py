@@ -290,7 +290,8 @@ if __name__ == '__main__':
                                              normalize='true')
 
         # Compute errors dataframe
-        df_errors = get_predictions_errors(true_label_ids, preds_label_ids, model_config.id2label)
+        df_errors = get_predictions_errors(true_label_ids, preds_label_ids, eval_texts, eval_indexes,
+                                           model_config.id2label, idx2corpus_idx)
 
         # Write file
         if trainer.is_world_process_zero():
