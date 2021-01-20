@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     # If we are only evaluating a model then we save the results (and the logs) inside a specific folder
     model_eval_dir = uniquify_filename(path.join(*[model_output_dir, 'evaluations', today_date_str + '_'
-                                                   + args.evalset.split('.')[0]]))
+                                                   + args.dataset.split('.')[0]]))
 
     model_logs_dir = path.join(model_eval_dir if args.notrain else model_output_dir, 'logs')
 
@@ -158,11 +158,11 @@ if __name__ == '__main__':
 
     train_texts, eval_texts, \
     train_labels, eval_labels, \
-    train_indexes, eval_indexes = read_data(path=path.join(DATASETS_DIR, args.dataset),
-                                            prep_entities=(ENTITIES_AGGREGATIONS,
-                                                           ENTITIES_TO_FILTER),
-                                            split=(0.8, 0.2),
-                                            seed=args.splitseed)
+    train_indexes, eval_indexes, idx2corpus_idx = read_data(path=path.join(DATASETS_DIR, args.dataset),
+                                                            prep_entities=(ENTITIES_AGGREGATIONS,
+                                                                           ENTITIES_TO_FILTER),
+                                                            split=(0.8, 0.2),
+                                                            seed=args.splitseed)
 
     # Load a specific model configuration or automatically use the one associated to the model
     config_name_or_path = args.config if args.config \
@@ -307,7 +307,7 @@ if __name__ == '__main__':
                                    deleted_entities=ENTITIES_TO_FILTER)
 
         # Plot charts #TODO: fix plots (now 'scores' is a dataframe)
-        #if args.plot:
+        # if args.plot:
         #    plot_results(eval_scores, model_eval_dir)
 
         print(f"{model_name_or_path} evaluated: eval_results saved in {model_eval_dir}.")

@@ -25,10 +25,13 @@ def read_data(path: str, prep_entities=None, split=(0.8, 0.2), seed=None):
     # Read data and build dataframe
     raw_data = Path(path).read_text(encoding='utf8').strip()
     jsons_data = raw_data.split('\n')
-    keys_needed = ['id', 'text', 'labels']
+    keys_needed = ['id', 'text', 'labels', 'meta']
     dict_data = [{k: v for k, v in json.loads(el).items() if k in keys_needed}
                  for el in jsons_data]
     df = pd.DataFrame(dict_data)
+
+    # Get the document localyzer dictionary
+    df, dfidx2corpus_idx = get_doc_localyser_dict(df)
 
     # Preprocess data
     if prep_entities:
@@ -38,10 +41,43 @@ def read_data(path: str, prep_entities=None, split=(0.8, 0.2), seed=None):
     train_df, test_df = split_data(df, split, seed=seed)
 
     # Extract text, labels and indexes (to replicate the same split in future)
-    train_texts, train_labels, train_indexes = train_df['text'].to_list(), train_df['labels'].to_list(), train_df.index.to_series()
-    test_texts, test_labels, test_indexes = test_df['text'].to_list(), test_df['labels'].to_list(), test_df.index.to_series()
+    train_texts, train_labels, train_indexes = train_df['text'].to_list(), train_df[
+        'labels'].to_list(), train_df.index.to_series()
+    test_texts, test_labels, test_indexes = test_df['text'].to_list(), test_df[
+        'labels'].to_list(), test_df.index.to_series()
 
-    return train_texts, test_texts, train_labels, test_labels, train_indexes, test_indexes
+    return train_texts, test_texts, train_labels, test_labels, train_indexes, test_indexes, dfidx2corpus_idx
+
+
+def get_doc_localyser_dict(data_df):
+    """
+    Build a dictionary with key=index (of data_df rows) and value = (corpus_name, doc_index_inside_the_corpus)
+    :param data_df: pd.Dataframe
+        dataframe with columns 'id', 'text', 'labels' and 'meta' representing the whole dataset
+    :return: the same dataframe 'data_df' and the dictionary just created
+    """
+
+    # Add the new column 'corpus' containing corpora names associated to the row
+    # and sort the dataframe based on Doccano IDs
+    data_df['corpus'] = pd.Series(data_df['meta'][i]['corpus_name'] for i in range(data_df['meta'].size))
+    df = data_df.sort_values('id')
+
+    # Create a tmp dictionary and the one to return as result
+    corpus2lastidx = {corpus: 1 for corpus in set(df['corpus'])}
+    idx2corpus_doc = {}  # to return
+
+    # Iterate over the rows and populate the result dictionary:
+    # key=dataframe index of the row, value=(name of the corpus, index of document inside the corpus)
+    for i in range(len(df.index)):
+        c = df.iloc[i, 4]
+        idx2corpus_doc[df.index[i]] = (c, corpus2lastidx[c])
+        corpus2lastidx[c] += 1
+
+    # Drop the column 'corpus' we added before and sort (back) the dataframe based on dataframe indexes
+    df = df.drop(columns=['corpus', ])
+    df.sort_index(inplace=True)
+
+    return df, idx2corpus_doc
 
 
 def split_data(data_df, split: tuple, seed=None):
@@ -52,6 +88,7 @@ def split_data(data_df, split: tuple, seed=None):
     :param seed: seed for reproducibility of the split
     :return: train_df, test_df
     """
+
     def least_frequent(alist):
         return min(set(alist), key=alist.count) if alist else 'O'
 
@@ -66,7 +103,7 @@ def split_data(data_df, split: tuple, seed=None):
     train_df, test_df = None, None
     for i, f in enumerate(strat_functions):
         y_strat = [f([lab[2:] for lab in l]) for l in [list(filter(lambda x: x != 'O', sublist))
-                                  for sublist in labels if sublist != 'O']] if f else None
+                                                       for sublist in labels if sublist != 'O']] if f else None
 
         try:
             train_df, test_df = train_test_split(data_df, test_size=split[1],
