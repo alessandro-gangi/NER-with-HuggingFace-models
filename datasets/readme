@@ -1,4 +1,6 @@
 Place in this folder your custom datasets.
 
-You can already find a training and an evaluation dataset for "finetune" script. There are also two test datasets (italian and english)
-for "inference" script
+Example of dataset "data.json1":
+{"id": 1, "text": "I feel that, yes, I could talk to you about Pat, because you're willing to talk to her about it.", "meta": {"corpus_name": "cname"}, "labels": [[44, 47, "Name"]]}
+{"id": 2, "text": "I live with Julia in Paris", "meta": {"corpus_name": "cname"}, "labels": [[12, 17, "Name"], [11, 26, "City"]]}
+{"id": 3, "text": "I love football", "meta": {"corpus_name": "cname"}, "labels": []}
