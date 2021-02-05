@@ -38,7 +38,7 @@ of an HuggingFace model'
 * 'dataset *name*' - Name of a specific dataset present inside "datasets" folder.
 * '-tok *name*' - Name of a specific tokenizer (check HuggingFace list). If not provided, an automatic tokenizer will be used
 * '-config *name*' - Name of a specific model configuration (check HuggingFace list). If not provided, an automatic configuration will be used
-* '-splitseed *value*' - Seed for reproducibility in sampling dataset. If not provided, random seed will be used.
+* '-splitseed *value*' - Seed for reproducibility in sampling dataset. Set to None for randomness.
 * '-noentprep' - If set, no entities aggregation/deletion will be performed
 * '-notrain' - If set, training will be skipped
 * '-noeval' - If set, evaluation phase will be skipped
@@ -50,9 +50,11 @@ value will be chosen according to the model used
 * '-epochs *value*' - int - Number of epochs during training. If not provided, 2 epochs will be used.
 * '-warmsteps *value*' - int -Number of warm-up steps before training. If not provided, 500 steps will be used.
 * '-wdecay *value*'- float - Weight decay to use during training. If not provided, 0.01 decay will be used.
-* '-trainbatch *value*' - int - Per device batch size during training. If not provided, 32-batch will be used.
-* '-evalbatch *value*' - int - Per device batch size during evaluation. If not provided, 64-batch will be used.
-* '-logsteps *value*' - int - Number of training steps between 2 logs. If not provided, 100 steps will be used.
+* '-trainbatch *value*' - int - Per device batch size during training. If not provided, 16-batch will be used.
+* '-evalbatch *value*' - int - Per device batch size during evaluation. If not provided, 32-batch will be used.
+* '-logsteps *value*' - int - Number of training steps between 2 logs. If not provided, 500 steps will be used.
+* '-savesteps *value*' - int - Number of training steps between checkpoints saving. If not provided, 2000 steps will be used.
+* '-evalstrategy *value*' - str - Strategy for evaluating model during training. If not provided, evaluation will take place every epoch
 
 
 HOW TO MAKE INFERENCE:

@@ -4,7 +4,7 @@ spacy==2.3.5
 matplotlib==3.2.0
 tensorboard
 torch
-transformers==3.4.0
+transformers
 scikit-learn
 numpy==1.19.3
 openpyxl

@@ -34,8 +34,8 @@ parser.add_argument('-tok', default='', type=str, help='Name of a specific token
 parser.add_argument('-config', default='', type=str, help='Name of a specific model configuration (check HuggingFace'
                                                           ' list). If not provided, an automatic configuration will'
                                                           ' be used')
-parser.add_argument('-splitseed', default=None, type=int, help='Seed for reproducibility when sampling dataset. '
-                                                               'Default is None (random seed).')
+parser.add_argument('-splitseed', default=42, type=int, help='Seed for reproducibility when sampling dataset. '
+                                                             'Default is 42 (set None for randomness).')
 parser.add_argument('-noentprep', action='store_true', help='If not set, entities will be preprocessed according to '
                                                             'the config file')
 parser.add_argument('-notrain', action='store_true', help='If set, training will be skipped')
@@ -47,9 +47,11 @@ parser.add_argument('-maxseqlen', default=None, type=int,
 parser.add_argument('-epochs', default=2, type=int, help='Number of epochs during training')
 parser.add_argument('-warmsteps', default=500, type=int, help='Number of warm-up steps before training')
 parser.add_argument('-wdecay', default=0.00, type=float, help='Weight decay to use during training')
-parser.add_argument('-trainbatch', default=32, type=int, help='Per device batch size during training')
-parser.add_argument('-evalbatch', default=64, type=int, help='Per device batch size during evaluation')
-parser.add_argument('-logsteps', default=100, type=int, help='Number of training steps between 2 logs')
+parser.add_argument('-trainbatch', default=16, type=int, help='Per device batch size during training')
+parser.add_argument('-evalbatch', default=32, type=int, help='Per device batch size during evaluation')
+parser.add_argument('-logsteps', default=500, type=int, help='Number of training steps between 2 logs')
+parser.add_argument('-savesteps', default=2000, type=int, help='Number of training steps between checkpoints saving')
+parser.add_argument('-evalstrategy', default='epoch', type=str, help='Strategy for evaluating model during training')
 
 """
 def align_predictions(predictions: np.ndarray, true_labels_ids: np.ndarray, binarize=True):
@@ -235,7 +237,9 @@ if __name__ == '__main__':
                                            per_device_train_batch_size=args.trainbatch,
                                            per_device_eval_batch_size=args.evalbatch,
                                            logging_dir=model_logs_dir,
-                                           logging_steps=args.logsteps)
+                                           logging_steps=args.logsteps,
+                                           save_steps=args.savesteps,
+                                           evaluation_strategy=args.evalstrategy)
     trainer = Trainer(
         model=model,
         args=training_arguments,
