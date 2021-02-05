@@ -8,7 +8,9 @@ from collections import defaultdict
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from spacy.lang.it import Italian
+from spacy.lang.en import English
 from spacy.gold import biluo_tags_from_offsets
+from langdetect import detect
 
 
 def read_data(path: str, prep_entities=None, split=(0.8, 0.2), seed=None):
@@ -129,7 +131,7 @@ def preprocess_data(data_df, prep_entities):
         - tuple[1] is a list of entities not to be considered in training/evaluation
     :return: preprocessed dataframe
     """
-    nlp = Italian()  # TODO: aggiungere tokenizzatore per l'inglese. E nel caso multilingua??
+    nlp_it, nlp_en = Italian(), English()  # TODO: aggiungere tokenizzatore per l'inglese. E nel caso multilingua??
     for index, row in data_df.iterrows():
         id = row['id']
         text = row['text']
@@ -143,7 +145,7 @@ def preprocess_data(data_df, prep_entities):
             continue
 
         # tokenize text and labels
-        doc = nlp(text)
+        doc = nlp_en(text) if detect(text) == 'en' else nlp_it(text)
         text = [token.text for token in doc]
         warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
         labels = biluo_tags_from_offsets(doc, labels)
