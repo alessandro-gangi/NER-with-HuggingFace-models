@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from collections import defaultdict
+
+from langdetect.lang_detect_exception import LangDetectException
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from spacy.lang.it import Italian
@@ -131,7 +133,7 @@ def preprocess_data(data_df, prep_entities):
         - tuple[1] is a list of entities not to be considered in training/evaluation
     :return: preprocessed dataframe
     """
-    nlp_it, nlp_en = Italian(), English()  # TODO: aggiungere tokenizzatore per l'inglese. E nel caso multilingua??
+    nlp_it, nlp_en = Italian(), English()
     for index, row in data_df.iterrows():
         id = row['id']
         text = row['text']
@@ -145,7 +147,11 @@ def preprocess_data(data_df, prep_entities):
             continue
 
         # tokenize text and labels
-        doc = nlp_en(text) if detect(text) == 'en' else nlp_it(text)
+        try:
+            language = detect(text)
+        except LangDetectException:
+            language = 'it'
+        doc = nlp_en(text) if language == 'en' else nlp_it(text)  # TODO: aggiungere gestione eccezioni
         text = [token.text for token in doc]
         warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
         labels = biluo_tags_from_offsets(doc, labels)
