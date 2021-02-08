@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 from os import path
 import pandas as pd
 
@@ -67,7 +67,9 @@ def save_evaluation_result(df_scores: pd.DataFrame, df_conf_matrix: pd.DataFrame
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    other_data = [['model name', model_name], ['eval dataset name', eval_dataset_name], ['eval duration', duration]]
+    today_date_str = datetime.now().strftime("%Y%m%d")
+    other_data = [['model name', model_name], ['dataset name', eval_dataset_name],
+                  ['eval duration', duration], ['date', today_date_str]]
     df_other_data = pd.DataFrame.from_records(other_data, columns=['key', 'value'])
     df_other_data.sort_values('key')
 

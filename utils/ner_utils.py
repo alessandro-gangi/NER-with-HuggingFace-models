@@ -146,12 +146,13 @@ def preprocess_data(data_df, prep_entities):
             data_df.reset_index(drop=True)
             continue
 
-        # tokenize text and labels
+        # get language and tokenize text and labels
         try:
             language = detect(text)
         except LangDetectException:
             language = 'it'
-        doc = nlp_en(text) if language == 'en' else nlp_it(text)  # TODO: aggiungere gestione eccezioni
+        doc = nlp_en(text) if language == 'en' else nlp_it(text)
+
         text = [token.text for token in doc]
         warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
         labels = biluo_tags_from_offsets(doc, labels)
