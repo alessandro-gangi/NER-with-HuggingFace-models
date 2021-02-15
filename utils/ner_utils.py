@@ -147,11 +147,12 @@ def preprocess_data(data_df, prep_entities):
             continue
 
         # get language and tokenize text and labels
-        try:
-            language = detect(text)
-        except LangDetectException:
-            language = 'it'
-        doc = nlp_en(text) if language == 'en' else nlp_it(text)
+        #try:
+        #    language = detect(text)
+        #except LangDetectException:
+        #    language = 'it'
+        # TODO: chose tokenizer according to 'lang' metadata of the documents
+        doc = nlp_it(text)
 
         text = [token.text for token in doc]
         warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
