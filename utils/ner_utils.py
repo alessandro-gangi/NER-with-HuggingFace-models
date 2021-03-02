@@ -5,14 +5,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from collections import defaultdict
-
-from langdetect.lang_detect_exception import LangDetectException
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from spacy.lang.it import Italian
 from spacy.lang.en import English
 from spacy.gold import biluo_tags_from_offsets
-from langdetect import detect
 
 
 def read_data(path: str, prep_entities=None, split=(0.8, 0.2), seed=None):
@@ -24,7 +21,7 @@ def read_data(path: str, prep_entities=None, split=(0.8, 0.2), seed=None):
         - tuple[1] is a list of entities not to be considered in training/evaluation
     :param split: training and evaluation sizes
     :param seed: seed for reproducibility
-    :return: train_texts, test_texts, train_labels, test_labels, train_indexes, test_indexes
+    :return: train_texts, test_texts, train_labels, test_labels, train_indexes, test_indexes, dfidx2corpus_idx
     """
     # Read data and build dataframe
     raw_data = Path(path).read_text(encoding='utf8').strip()
@@ -134,10 +131,13 @@ def preprocess_data(data_df, prep_entities):
     :return: preprocessed dataframe
     """
     nlp_it, nlp_en = Italian(), English()
+    data_df['lang'] = pd.Series(data_df['meta'][i]['lang'] for i in range(data_df['meta'].size))
+
     for index, row in data_df.iterrows():
         id = row['id']
         text = row['text']
         labels = row['labels']
+        language = row['lang']
 
         # fixing starting/ending space misalignments
         labels = fix_labels_misalignments(id=id, text=text, labels=labels)
@@ -146,13 +146,7 @@ def preprocess_data(data_df, prep_entities):
             data_df.reset_index(drop=True)
             continue
 
-        # get language and tokenize text and labels
-        #try:
-        #    language = detect(text)
-        #except LangDetectException:
-        #    language = 'it'
-        # TODO: chose tokenizer according to 'lang' metadata of the documents
-        doc = nlp_it(text)
+        doc = nlp_en(text) if language == 'en' else nlp_it(text)
 
         text = [token.text for token in doc]
         warnings.filterwarnings("ignore", message=r"\[W030\]", category=UserWarning)
@@ -278,11 +272,11 @@ def process_predictions(predict_results):
     return preds_label_ids, true_label_ids
 
 
-def get_metric_scores(preds_label_ids_flat, true_label_ids_flat, label_ids, labels):
+def get_metric_scores(true_label_ids_flat, preds_label_ids_flat, label_ids, labels):
     """
     compute, for each label, metric scores on predictions of the model
-    :param preds_label_ids_flat: list of label_ids predicted by the model
     :param true_label_ids_flat: list of true label_ids
+    :param preds_label_ids_flat: list of label_ids predicted by the model
     :param label_ids: list of different label_ids used by the model
     :param labels: list of different labels (associated to label_ids) used by the model
     :return: dataframe containing metric scores associated to labels with columns: precision, recall, f1-score,
